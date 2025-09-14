@@ -1,0 +1,47 @@
+# --- Node / package managers ---
+node_modules/
+npm-debug.log*
+
+# --- Build output / caches ---
+dist/
+build/
+out/
+.vite/
+.vitest/
+coverage/
+.cache/
+.parcel-cache/
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Linters / tools
+.eslintcache
+.stylelintcache
+
+# --- Env files (keep examples) ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- Logs ---
+logs/
+*.log
+*.log.*
+
+# Production
+/dist/
+/build/
+
+# Visual Studio Code
+/.vscode/
+
+# JetBrains / IntelliJ
+.idea/
+*.iml
+
+# MacOS
+.DS_Store

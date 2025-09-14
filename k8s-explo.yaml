@@ -1,0 +1,174 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-service
+  labels:
+    app: echo-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo-service
+  template:
+    metadata:
+      labels:
+        app: echo-service
+    spec:
+      containers:
+        - name: echo-service
+          image: owahlen/echo-service:1.13
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_SERVICE_NAME
+              value: echo-service
+            - name: OTEL_SERVICE_NAMESPACE
+              value: default
+            - name: OTEL_METRICS_EXPORT_INTERVAL_MS
+              value: "5000"
+            # remove after verifying:
+            - name: OTEL_DIAG_LOG_LEVEL
+              value: DEBUG
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service
+  labels:
+    app: echo-service
+spec:
+  selector:
+    app: echo-service
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forward-service
+  labels:
+    app: forward-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: forward-service
+  template:
+    metadata:
+      labels:
+        app: forward-service
+    spec:
+      containers:
+        - name: forward-service
+          image: owahlen/forward-service:1.18
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ECHO_BASE_URL
+              value: http://echo-service:3000
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_SERVICE_NAME
+              value: forward-service
+            - name: OTEL_SERVICE_NAMESPACE
+              value: default
+            - name: OTEL_METRICS_EXPORT_INTERVAL_MS
+              value: "5000"
+            # remove after verifying:
+            - name: OTEL_DIAG_LOG_LEVEL
+              value: DEBUG
+          ports:
+            - name: http
+              containerPort: 3001
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forward-service
+  labels:
+    app: forward-service
+spec:
+  selector:
+    app: forward-service
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forward-ingress
+  annotations:
+    # If your forward-service expects to run at "/" instead of "/echo",
+    # uncomment the two lines below to strip the prefix:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /   # change the path if other services should be reachable by this ingress
+            pathType: Prefix
+            backend:
+              service:
+                name: forward-service
+                port:
+                  number: 3001
+---
+# deploy with: kubectl apply -f k8s-explo.yaml
+# delete with: kubectl delete -f k8s-explo.yaml
