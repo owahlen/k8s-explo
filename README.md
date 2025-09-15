@@ -1,17 +1,19 @@
 # Kubernetes Service Playground
 
-A minimal TypeScript/Express setup packaged with Docker and deployed to a local minikube cluster. It includes:
-- echo-service: echoes request details.
-- forward-service: forwards requests to echo-service and returns its response.
+A minimal multi-runtime setup to explore services locally and on minikube:
+- echo-service-node: echoes request details (TypeScript/Express).
+- forward-service-node: forwards requests to echo-service (TypeScript/Express).
+- forward-service-jvm: forwards requests to echo-service (Kotlin/Spring WebFlux).
 
 ## Prerequisites
 - Docker, Node.js 22+ and npm
 - k6 for load testing
 
 ## Repo Layout
-- `echo-service/`: echo service (Vite build, Vitest tests)
-- `forward-service/`: forwards to echo-service (same stack)
-- `k8s-explo.yaml`: Deployments, Services (ClusterIP), and Ingress for both
+- `echo-service-node/`: echo service (Vite build, Vitest tests)
+- `forward-service-node/`: forwards to echo-service (same stack)
+- `forward-service-jvm/`: forwards to echo-service (Spring Boot WebFlux)
+- `k8s-explo.yaml`: Deployments, Services (ClusterIP), and Ingress for Node services
 - `http/`: sample requests
 
 ## Develop & Test Locally
@@ -36,31 +38,38 @@ kubectl -n monitoring apply -f otel-collector.yaml
 The `grafana` folder contains dashboards that can be imported.
 
 ### Running the services
-Run the two services locally without minikube:
+Run the services locally without minikube:
 ```bash
-cd echo-service
+cd echo-service-node
 npm ci
 npm run dev     # hot-reload on http://localhost:3000
 npm test        # Vitest + Supertest
 
 # In a second terminal
-cd forward-service
+cd forward-service-node
 npm i
 ECHO_BASE_URL=http://localhost:3000 npm run dev   # http://localhost:3001
 npm test
+
+# In a third terminal (JVM forwarder)
+cd ../forward-service-jvm
+./gradlew test
+ECHO_BASE_URL=http://localhost:3000 ./gradlew bootRun   # http://localhost:8080 by default
 ```
 Quick checks:
-- Echo: `curl "http://localhost:3000/?client=test"`
-- Forward (POST): `curl -X POST 'http://localhost:3001/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
+- Echo (Node): `curl "http://localhost:3000/?client=test"`
+- Forward-node (POST): `curl -X POST 'http://localhost:3001/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
+- Forward-jvm (POST): `curl -X POST 'http://localhost:8080/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
+- Health (JVM Actuator): `curl 'http://localhost:8080/actuator/health'`
 
-## Build & Containerize
+## Build & Containerize (Node images)
 ```bash
-cd echo-service
+cd echo-service-node
 npm run build
 docker build -t owahlen/echo-service:1.0 .
 docker push owahlen/echo-service:1.0 # optional
 
-cd ../forward-service
+cd ../forward-service-node
 npm run build
 docker build -t owahlen/forward-service:1.0 .
 docker push owahlen/echo-service:1.0 # optional
@@ -80,8 +89,8 @@ minikube ip # retrieve the tunnel IP
 - Build inside Minikube’s Docker daemon:
 ```bash
 eval $(minikube docker-env)
-docker build -t owahlen/echo-service:1.0 echo-service
-docker build -t owahlen/forward-service:1.0 forward-service
+docker build -t owahlen/echo-service:1.0 echo-service-node
+docker build -t owahlen/forward-service:1.0 forward-service-node
 ```
 - Or load a local image:
 ```bash
@@ -111,9 +120,10 @@ ss -tanp
 ```
 
 ## Configuration & Health
-- Env (echo): `PORT` (3000), `LOG_LEVEL` (`info`)
-- Env (forward): `PORT` (3001), `ECHO_BASE_URL` (defaults to `http://localhost:3000`; set to `http://echo-service:3000` in cluster)
-- Probes: readiness/liveness and resource limits defined in `k8s-explo.yaml`
+- Env (echo-node): `PORT` (3000), `LOG_LEVEL` (`info`)
+- Env (forward-node): `PORT` (3001), `ECHO_BASE_URL` (defaults to `http://localhost:3000`; set to `http://echo-service:3000` in cluster)
+- Env (forward-jvm): `ECHO_BASE_URL` (defaults to `http://localhost:3000`)
+- Probes: readiness/liveness and resource limits defined in `k8s-explo.yaml` (Node services)
 - Containers run as non-root
 
 ## Update & Cleanup
