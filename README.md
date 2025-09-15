@@ -71,6 +71,11 @@ docker push owahlen/echo-service:1.0 # optional
 ```bash
 minikube addons enable ingress
 ```
+On macOS it is also necessary to enable a minikube tunnel:
+```bash
+minikube tunnel # start the tunnel
+minikube ip # retrieve the tunnel IP
+```
 2) Make the images available to the cluster. Choose one:
 - Build inside Minikube’s Docker daemon:
 ```bash

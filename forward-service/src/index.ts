@@ -7,6 +7,12 @@ import Undici from "undici";
 import fetch = Undici.fetch;
 import Pool = Undici.Pool;
 
+
+function parseEnvInt(name: string, defaultValue: number): number {
+    const v = process.env[name];
+    return v !== undefined ? parseInt(v, 10) : defaultValue;
+}
+
 // Map of origin -> Pool
 const originPools = new Map<string, Pool>();
 
@@ -14,7 +20,7 @@ function getPoolFor(origin: string): Pool {
     let pool = originPools.get(origin);
     if (!pool) {
         pool = new Pool(origin, {
-            pipelining: 0 // disable keep-alive
+            pipelining: parseEnvInt('POOL_PIPELINING', 0) // set to 0 to disable keep-alive
         });
         originPools.set(origin, pool);
         logger.info(`Created Pool for origin: ${origin}`);

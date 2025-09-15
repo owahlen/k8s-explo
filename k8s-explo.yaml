@@ -90,9 +90,11 @@ spec:
     spec:
       containers:
         - name: forward-service
-          image: owahlen/forward-service:1.18
+          image: owahlen/forward-service:1.19
           imagePullPolicy: IfNotPresent
           env:
+            - name: POOL_PIPELINING
+              value: "0"
             - name: ECHO_BASE_URL
               value: http://echo-service:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
