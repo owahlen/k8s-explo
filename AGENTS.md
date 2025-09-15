@@ -5,10 +5,11 @@
   - `src/`: app code (`index.ts`, `logger.ts`, tests).
   - `dist/`: compiled output from `npm run build`.
   - `Dockerfile`: multi-stage build (Node 22 Alpine).
-- `forward-service/`: forwards requests to echo-service and returns its response (same stack).
+- `forward-service-node/`: forwards requests to echo-service and returns its response (same stack).
     - `src/`: app code (`index.ts`, `logger.ts`, tests).
     - `dist/`: compiled output from `npm run build`.
     - `Dockerfile`: multi-stage build (Node 22 Alpine).
+- `forward-service-jvm/`: forward requests to echo-service using the JVM.
 - `http/`: example requests (`echo.http`).
 - `k8s-explo.yaml`: Deployments, Services, and Ingress for both services.
 
