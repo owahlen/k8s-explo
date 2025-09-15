@@ -66,13 +66,17 @@ Quick checks:
 ```bash
 cd echo-service-node
 npm run build
-docker build -t owahlen/echo-service:1.0 .
-docker push owahlen/echo-service:1.0 # optional
+docker build -t owahlen/echo-service-node:1.0 .
+docker push owahlen/echo-service-node:1.0 # optional
 
 cd ../forward-service-node
 npm run build
-docker build -t owahlen/forward-service:1.0 .
-docker push owahlen/echo-service:1.0 # optional
+docker build -t owahlen/forward-service-node:1.0 .
+docker push owahlen/echo-service-node:1.0 # optional
+
+cd ../forward-service-jvm
+docker build -t owahlen/forward-service-jvm:1.0 .
+docker push owahlen/forward-service-jvm:1.0
 ```
 
 ## Deploy to minikube
