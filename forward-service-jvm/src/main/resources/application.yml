@@ -1,3 +1,20 @@
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: true
+        url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+
+  opentelemetry:
+    resource-attributes:
+      service.name: ${OTEL_SERVICE_NAME:forward-service-jvm}
+      service.namespace: ${OTEL_SERVICE_NAMESPACE:default}
+
 spring:
   application:
     name: forward-service

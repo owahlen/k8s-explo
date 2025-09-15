@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: echo-service
+  name: echo-service-node
   labels:
-    app: echo-service
+    app: echo-service-node
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: echo-service
+      app: echo-service-node
   template:
     metadata:
       labels:
-        app: echo-service
+        app: echo-service-node
     spec:
       containers:
-        - name: echo-service
-          image: owahlen/echo-service:1.13
+        - name: echo-service-node
+          image: owahlen/echo-service-node:1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
             - name: OTEL_SERVICE_NAME
-              value: echo-service
+              value: echo-service-node
             - name: OTEL_SERVICE_NAMESPACE
               value: default
             - name: OTEL_METRICS_EXPORT_INTERVAL_MS
@@ -60,12 +60,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: echo-service
+  name: echo-service-node
   labels:
-    app: echo-service
+    app: echo-service-node
 spec:
   selector:
-    app: echo-service
+    app: echo-service-node
   type: ClusterIP
   ports:
     - name: http
@@ -75,32 +75,32 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: forward-service
+  name: forward-service-node
   labels:
-    app: forward-service
+    app: forward-service-node
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: forward-service
+      app: forward-service-node
   template:
     metadata:
       labels:
-        app: forward-service
+        app: forward-service-node
     spec:
       containers:
-        - name: forward-service
-          image: owahlen/forward-service:1.19
+        - name: forward-service-node
+          image: owahlen/forward-service-node:1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: POOL_PIPELINING
               value: "0"
             - name: ECHO_BASE_URL
-              value: http://echo-service:3000
+              value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
             - name: OTEL_SERVICE_NAME
-              value: forward-service
+              value: forward-service-node
             - name: OTEL_SERVICE_NAMESPACE
               value: default
             - name: OTEL_METRICS_EXPORT_INTERVAL_MS
@@ -138,39 +138,122 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: forward-service
+  name: forward-service-node
   labels:
-    app: forward-service
+    app: forward-service-node
 spec:
   selector:
-    app: forward-service
+    app: forward-service-node
   type: ClusterIP
   ports:
     - name: http
       port: 3001
       targetPort: 3001
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forward-service-jvm
+  labels:
+    app: forward-service-jvm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: forward-service-jvm
+  template:
+    metadata:
+      labels:
+        app: forward-service-jvm
+    spec:
+      containers:
+        - name: forward-service-jvm
+          image: owahlen/forward-service-jvm:1.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ECHO_BASE_URL
+              value: http://echo-service-node:3000
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_SERVICE_NAME
+              value: forward-service-jvm
+            - name: OTEL_SERVICE_NAMESPACE
+              value: default
+            - name: OTEL_METRICS_EXPORT_INTERVAL_MS
+              value: "5000"
+            # remove after verifying:
+            - name: OTEL_DIAG_LOG_LEVEL
+              value: DEBUG
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forward-service-jvm
+  labels:
+    app: forward-service-jvm
+spec:
+  selector:
+    app: forward-service-jvm
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: forward-ingress
   annotations:
-    # If your forward-service expects to run at "/" instead of "/echo",
-    # uncomment the two lines below to strip the prefix:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Strip the leading "/node" or "/jvm" path prefix and forward the remainder
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /   # change the path if other services should be reachable by this ingress
-            pathType: Prefix
+          - path: /node(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
-                name: forward-service
+                name: forward-service-node
                 port:
                   number: 3001
+          - path: /jvm(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: forward-service-jvm
+                port:
+                  number: 8080
 ---
 # deploy with: kubectl apply -f k8s-explo.yaml
 # delete with: kubectl delete -f k8s-explo.yaml

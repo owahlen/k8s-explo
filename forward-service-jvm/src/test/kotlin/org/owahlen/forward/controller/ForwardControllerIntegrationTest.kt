@@ -1,6 +1,8 @@
 package org.owahlen.forward.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.micrometer.core.instrument.MeterRegistry
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -20,6 +22,9 @@ class ForwardControllerIntegrationTest {
 
     @Autowired
     lateinit var client: WebTestClient
+
+    @Autowired
+    lateinit var meterRegistry: MeterRegistry
 
     companion object {
         // Holds a class level reference to the fake upstream server (Reactor Netty HTTP server)
@@ -83,6 +88,8 @@ class ForwardControllerIntegrationTest {
         fun properties(registry: DynamicPropertyRegistry) {
             startIfNeeded()
             registry.add("ECHO_BASE_URL") { "http://localhost:${upstream.port()}" }
+            // disable network connections for the otlp exporter
+            registry.add("management.otlp.metrics.export.enabled") { false }
         }
     }
 
@@ -116,4 +123,27 @@ class ForwardControllerIntegrationTest {
             .jsonPath("$.body.hello").isEqualTo("world")
             .jsonPath("$.body.n").isEqualTo(42)
     }
+
+    @Test
+    fun recordsServerRequestMetric() {
+        // Act – make a request that your controller forwards
+        client.get().uri("/metrics-check").exchange().expectStatus().isOk
+
+        // Assert – custom counter from ForwardMetrics exists and increments
+        val requestCounter = meterRegistry.find("http_requests_total")
+            .tags("path", "/metrics-check")
+            .counter()
+        assertThat(requestCounter).isNotNull()
+        assertThat(requestCounter!!.count()).isGreaterThan(0.0)
+
+        // Assert – custom duration summary from ForwardMetrics exists and records values
+        val durationSummary = meterRegistry.find("http_request_duration")
+            .tags("path", "/metrics-check")
+            .summary()
+        assertThat(durationSummary).isNotNull()
+        assertThat(durationSummary!!.count()).isGreaterThan(0)
+        // Accept totalAmount being 0.0 for extremely fast requests
+        assertThat(durationSummary.totalAmount()).isGreaterThanOrEqualTo(0.0)
+    }
+
 }
