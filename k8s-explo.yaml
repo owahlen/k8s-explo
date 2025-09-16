@@ -29,7 +29,7 @@ spec:
               value: "5000"
             # remove after verifying:
             - name: OTEL_DIAG_LOG_LEVEL
-              value: DEBUG
+              value: INFO
           ports:
             - name: http
               containerPort: 3000
@@ -107,7 +107,7 @@ spec:
               value: "5000"
             # remove after verifying:
             - name: OTEL_DIAG_LOG_LEVEL
-              value: DEBUG
+              value: INFO
           ports:
             - name: http
               containerPort: 3001
@@ -183,9 +183,6 @@ spec:
               value: default
             - name: OTEL_METRICS_EXPORT_INTERVAL_MS
               value: "5000"
-            # remove after verifying:
-            - name: OTEL_DIAG_LOG_LEVEL
-              value: DEBUG
           ports:
             - name: http
               containerPort: 8080
