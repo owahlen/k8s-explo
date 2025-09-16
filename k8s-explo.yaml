@@ -94,7 +94,7 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: POOL_PIPELINING
-              value: "0"
+              value: "1"
             - name: ECHO_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -168,9 +168,11 @@ spec:
     spec:
       containers:
         - name: forward-service-jvm
-          image: owahlen/forward-service-jvm:1.1
+          image: owahlen/forward-service-jvm:1.2
           imagePullPolicy: IfNotPresent
           env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+UseG1GC -XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=60 -XX:MaxMetaspaceSize=128m"
             - name: ECHO_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -187,29 +189,32 @@ spec:
           ports:
             - name: http
               containerPort: 8080
-          readinessProbe:
+          startupProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 3
-            periodSeconds: 10
-            timeoutSeconds: 2
-            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 60
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 10
-            periodSeconds: 20
-            timeoutSeconds: 2
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 5
             failureThreshold: 3
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 500m
+              cpu: 100m
               memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
 ---
 apiVersion: v1
 kind: Service

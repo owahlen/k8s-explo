@@ -21,7 +21,7 @@ A minimal multi-runtime setup to explore services locally and on minikube:
 * [Install minikube](https://minikube.sigs.k8s.io/docs/start/)
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/) in a matching version
 * [Install helm](https://helm.sh/docs/intro/install/)
-* Start the cluster: `minicube start`
+* Start the cluster: `minikube start --addons=metrics-server --addons=dashboard --addons=ingress`
 * Start the dashboard (optional): `minikube dashboard`
 
 ### Install Monitoring and Tracing
