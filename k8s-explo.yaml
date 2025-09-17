@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: echo-service-node
-          image: owahlen/echo-service-node:1.0
+          image: owahlen/echo-service-node:dev
           imagePullPolicy: IfNotPresent
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -90,7 +90,7 @@ spec:
     spec:
       containers:
         - name: forward-service-node
-          image: owahlen/forward-service-node:1.0
+          image: owahlen/forward-service-node:dev
           imagePullPolicy: IfNotPresent
           env:
             - name: POOL_PIPELINING
@@ -168,7 +168,7 @@ spec:
     spec:
       containers:
         - name: forward-service-jvm
-          image: owahlen/forward-service-jvm:1.2
+          image: owahlen/forward-service-jvm:dev
           imagePullPolicy: IfNotPresent
           env:
             - name: JAVA_TOOL_OPTIONS
@@ -183,6 +183,8 @@ spec:
               value: default
             - name: OTEL_METRICS_EXPORT_INTERVAL_MS
               value: "5000"
+            - name: FORWARDER_KEEPALIVE
+              value: "false"
           ports:
             - name: http
               containerPort: 8080

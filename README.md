@@ -62,21 +62,25 @@ Quick checks:
 - Forward-jvm (POST): `curl -X POST 'http://localhost:8080/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
 - Health (JVM Actuator): `curl 'http://localhost:8080/actuator/health'`
 
-## Build & Containerize (Node images)
+## Build & Containerize (Node and JVM images)
 ```bash
-cd echo-service-node
-npm run build
-docker build -t owahlen/echo-service-node:1.0 .
-docker push owahlen/echo-service-node:1.0 # optional
+# switch Docker context to minikube
+eval $(minikube -p minikube docker-env)  # switch Docker context
 
-cd ../forward-service-node
-npm run build
-docker build -t owahlen/forward-service-node:1.0 .
-docker push owahlen/echo-service-node:1.0 # optional
+docker build -t forward-service:dev ./forward-service-jvm
+kubectl rollout restart deploy forward-service-jvm
 
-cd ../forward-service-jvm
-docker build -t owahlen/forward-service-jvm:1.0 .
-docker push owahlen/forward-service-jvm:1.0
+docker build -t owahlen/echo-service-node:dev ./echo-service-node
+kubectl rollout restart deploy echo-service-node
+
+docker build -t owahlen/forward-service-node:dev ./forward-service-node
+kubectl rollout restart deploy forward-service-node
+
+docker build -t owahlen/forward-service-jvm:dev ./forward-service-jvm
+kubectl rollout restart deploy forward-service-jvm
+
+# switch back Docker context
+eval $(minikube -p minikube docker-env -u)
 ```
 
 ## Deploy to minikube
