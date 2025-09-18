@@ -67,9 +67,6 @@ Quick checks:
 # switch Docker context to minikube
 eval $(minikube -p minikube docker-env)  # switch Docker context
 
-docker build -t forward-service:dev ./forward-service-jvm
-kubectl rollout restart deploy forward-service-jvm
-
 docker build -t owahlen/echo-service-node:dev ./echo-service-node
 kubectl rollout restart deploy echo-service-node
 

@@ -1,0 +1,58 @@
+name: Build and Push Docker images (dev)
+
+on:
+  push:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_TAG: dev
+
+jobs:
+  build-and-push:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: echo-service-node
+            context: echo-service-node
+            repo: echo-service-node
+          - name: forward-service-node
+            context: forward-service-node
+            repo: forward-service-node
+          - name: forward-service-jvm
+            context: forward-service-jvm
+            repo: forward-service-jvm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Enable emulation so we can build arm64 on x86 runners
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.repo }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
