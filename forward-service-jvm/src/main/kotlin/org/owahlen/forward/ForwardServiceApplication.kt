@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class ForwardServiceApplication
 
 fun main(args: Array<String>) {
-	runApplication<ForwardServiceApplication>(*args)
+    runApplication<ForwardServiceApplication>(*args)
 }
