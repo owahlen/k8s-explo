@@ -26,8 +26,8 @@ export let options = {
     },
 };
 
-const URL="http://127.0.0.1:8080/node/loadtest"
-// const URL = "http://192.168.49.2/jvm/loadtest"
+// const URL="http://127.0.0.1:8080/node/loadtest"
+const URL = "http://192.168.49.2/jvm/loadtest"
 
 export default function () {
     http.get(URL);

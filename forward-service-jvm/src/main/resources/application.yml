@@ -16,4 +16,4 @@ management:
 
 spring:
   application:
-    name: forward-service
+    name: forward-service-jvm

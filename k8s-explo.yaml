@@ -21,15 +21,26 @@ spec:
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_METRICS_EXPORTER
+              value: otlp
+            - name: OTEL_EXPORTER_OTLP_METRICS_PROTOCOL
+              value: http/protobuf
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "5000"   # ms
+            - name: OTEL_SEMCONV_STABILITY_OPT_IN
+              value: http/dup # emit stable + legacy HTTP metrics during migration
             - name: OTEL_SERVICE_NAME
               value: echo-service-node
             - name: OTEL_SERVICE_NAMESPACE
               value: default
-            - name: OTEL_METRICS_EXPORT_INTERVAL_MS
-              value: "5000"
-            # remove after verifying:
-            - name: OTEL_DIAG_LOG_LEVEL
-              value: INFO
+            # Optional: enable SDK debug logs
+            # - name: OTEL_LOG_LEVEL
+            #   value: debug
+            # Optional: disable traces/logs if you only want metrics
+            # - name: OTEL_TRACES_EXPORTER
+            #   value: none
+            # - name: OTEL_LOGS_EXPORTER
+            #   value: none
           ports:
             - name: http
               containerPort: 3000
@@ -99,15 +110,26 @@ spec:
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_METRICS_EXPORTER
+              value: otlp
+            - name: OTEL_EXPORTER_OTLP_METRICS_PROTOCOL
+              value: http/protobuf
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "5000"   # ms
+            - name: OTEL_SEMCONV_STABILITY_OPT_IN
+              value: http/dup
             - name: OTEL_SERVICE_NAME
               value: forward-service-node
             - name: OTEL_SERVICE_NAMESPACE
               value: default
-            - name: OTEL_METRICS_EXPORT_INTERVAL_MS
-              value: "5000"
-            # remove after verifying:
-            - name: OTEL_DIAG_LOG_LEVEL
-              value: INFO
+            # Optional: enable SDK debug logs
+            # - name: OTEL_LOG_LEVEL
+            #   value: debug
+            # Optional: disable traces/logs if you only want metrics
+            # - name: OTEL_TRACES_EXPORTER
+            #   value: none
+            # - name: OTEL_LOGS_EXPORTER
+            #   value: none
           ports:
             - name: http
               containerPort: 3001
@@ -181,8 +203,6 @@ spec:
               value: forward-service-jvm
             - name: OTEL_SERVICE_NAMESPACE
               value: default
-            - name: OTEL_METRICS_EXPORT_INTERVAL_MS
-              value: "5000"
             - name: FORWARDER_KEEPALIVE
               value: "false"
           ports:

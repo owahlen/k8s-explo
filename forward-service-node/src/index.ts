@@ -1,8 +1,8 @@
+import './otel.ts'
 import express, {Request, Response} from 'express';
 import logger from './logger.ts';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
-import {recordRequest, startMetrics} from "./metrics.ts";
 import Undici from "undici";
 import fetch = Undici.fetch;
 import Pool = Undici.Pool;
@@ -31,7 +31,6 @@ function getPoolFor(origin: string): Pool {
 const app = express();
 const port = process.env.PORT || 3001;
 
-startMetrics();
 app.use(express.json());
 
 app.get('/health', (_: Request, res: Response) => {
@@ -81,8 +80,6 @@ app.use(async (req: Request, res: Response) => {
     } catch (err: any) {
         logger.error(`Forward error: ${err?.stack || err?.message || String(err)}`);
         res.status(502).json({error: 'Bad Gateway', detail: 'Failed to reach upstream echo-service'});
-    } finally {
-        recordRequest(req.path, Date.now() - start);
     }
 });
 

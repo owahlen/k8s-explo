@@ -1,13 +1,11 @@
+import './otel.ts'
 import express, {Request, Response} from 'express';
 import logger from './logger.ts';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
-import {recordRequest, startMetrics} from "./metrics.ts";
 
 const app = express();
 const port = process.env.PORT || 3000;
-
-startMetrics();
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -42,7 +40,6 @@ app.all('/{*path}', (req: Request, res: Response) => {
     logger.debug(`Sending response: ${JSON.stringify(response, null, 2)}`)
 
     res.status(200).json(response);
-    recordRequest(req.path, Date.now()-start);
 });
 
 // Export the Express app directly for Vite to use.

@@ -26,6 +26,34 @@ data:
             - k8s.deployment.name
             - k8s.node.name
 
+      # ---- Unify Node.js metrics with Spring style ----
+      transform:
+        error_mode: ignore
+        metric_statements:
+          # 1) Rename Node HTTP duration histogram to "http.server.requests"
+          - context: metric
+            statements:
+              # Older OTel JS name
+              - set(name, "http.server.requests") where name == "http.request.duration"
+              # Newer OTel JS name (semconv update)
+              - set(name, "http.server.requests") where name == "http.server.duration"
+
+          # 2) Normalize labels: copy route/path -> uri for that metric
+          - context: datapoint
+            statements:
+              - set(attributes["uri"], attributes["http.route"]) where name == "http.server.requests" and attributes["http.route"] != nil
+              - set(attributes["uri"], attributes["path"]) where name == "http.server.requests" and attributes["uri"] == nil and attributes["path"] != nil
+              - set(attributes["uri"], attributes["http.target"]) where name == "http.server.requests" and attributes["uri"] == nil and attributes["http.target"] != nil
+              # Optional cleanup (uncomment if you want to drop the source labels):
+              # - delete_key(attributes, "http.route") where name == "http.server.requests"
+              # - delete_key(attributes, "path") where name == "http.server.requests"
+              # - delete_key(attributes, "http.target") where name == "http.server.requests"
+
+          # 3) (Optional) Rename Node plain counter to avoid name/type clash
+          - context: metric
+            statements:
+              - set(name, "http.server.requests.count") where name == "http.requests"
+
     exporters:
       prometheus:
         endpoint: 0.0.0.0:9464
@@ -36,7 +64,7 @@ data:
       pipelines:
         metrics:
           receivers: [otlp]
-          processors: [k8sattributes]
+          processors: [k8sattributes, transform]
           exporters: [prometheus]
 
 ---
