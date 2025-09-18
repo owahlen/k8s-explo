@@ -26,33 +26,46 @@ data:
             - k8s.deployment.name
             - k8s.node.name
 
-      # ---- Unify Node.js metrics with Spring style ----
+      # ---- Canonicalize HTTP metric names/labels (Node & Spring) ----
       transform:
         error_mode: ignore
         metric_statements:
-          # 1) Rename Node HTTP duration histogram to "http.server.requests"
+          # 1) Metric name canonicalization
           - context: metric
             statements:
-              # Older OTel JS name
-              - set(name, "http.server.requests") where name == "http.request.duration"
-              # Newer OTel JS name (semconv update)
-              - set(name, "http.server.requests") where name == "http.server.duration"
+              # Node (legacy -> canonical)
+              - set(name, "http.server.request.duration") where name == "http.request.duration"
+              - set(name, "http.server.request.duration") where name == "http.server.duration"
+              - set(name, "http.client.request.duration") where name == "http.client.duration"
 
-          # 2) Normalize labels: copy route/path -> uri for that metric
+              # Spring Micrometer (built-in names -> canonical)
+              - set(name, "http.server.request.duration") where name == "http.server.requests"
+              - set(name, "http.client.request.duration") where name == "http.client.requests"
+
+          # 2) Label normalization (add canonical keys; keep legacy ones too)
           - context: datapoint
             statements:
-              - set(attributes["uri"], attributes["http.route"]) where name == "http.server.requests" and attributes["http.route"] != nil
-              - set(attributes["uri"], attributes["path"]) where name == "http.server.requests" and attributes["uri"] == nil and attributes["path"] != nil
-              - set(attributes["uri"], attributes["http.target"]) where name == "http.server.requests" and attributes["uri"] == nil and attributes["http.target"] != nil
-              # Optional cleanup (uncomment if you want to drop the source labels):
-              # - delete_key(attributes, "http.route") where name == "http.server.requests"
-              # - delete_key(attributes, "path") where name == "http.server.requests"
-              # - delete_key(attributes, "http.target") where name == "http.server.requests"
+              # --- Server ---
+              # route
+              - set(attributes["http.route"], attributes["uri"]) where name == "http.server.request.duration" and attributes["http.route"] == nil and attributes["uri"] != nil
+              # method
+              - set(attributes["http.request.method"], attributes["method"]) where name == "http.server.request.duration" and attributes["http.request.method"] == nil and attributes["method"] != nil
+              # status code
+              - set(attributes["http.response.status_code"], attributes["status"]) where name == "http.server.request.duration" and attributes["http.response.status_code"] == nil and attributes["status"] != nil
+              # keep dashboards happy: also copy canonical -> legacy if legacy missing
+              - set(attributes["uri"], attributes["http.route"]) where name == "http.server.request.duration" and attributes["uri"] == nil and attributes["http.route"] != nil
 
-          # 3) (Optional) Rename Node plain counter to avoid name/type clash
-          - context: metric
-            statements:
-              - set(name, "http.server.requests.count") where name == "http.requests"
+              # --- Client ---
+              - set(attributes["http.route"], attributes["uri"]) where name == "http.client.request.duration" and attributes["http.route"] == nil and attributes["uri"] != nil
+              - set(attributes["http.request.method"], attributes["method"]) where name == "http.client.request.duration" and attributes["http.request.method"] == nil and attributes["method"] != nil
+              - set(attributes["http.response.status_code"], attributes["status"]) where name == "http.client.request.duration" and attributes["http.response.status_code"] == nil and attributes["status"] != nil
+              - set(attributes["uri"], attributes["http.route"]) where name == "http.client.request.duration" and attributes["uri"] == nil and attributes["http.route"] != nil
+
+          # NOTE:
+          # - We intentionally do NOT rescale units here.
+          #   If Spring exports milliseconds, Prom will show *_milliseconds_* even after renaming.
+          #   Switch Spring to seconds (SLOs/min/max in seconds) so unit becomes 's'
+          #   and Prom exposes *_seconds_* alongside Node.
 
     exporters:
       prometheus:

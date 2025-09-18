@@ -13,6 +13,8 @@
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-node": "0.64.1",
+    "@opentelemetry/instrumentation-express": "^0.54.0",
+    "@opentelemetry/instrumentation-http": "^0.205.0",
     "@opentelemetry/sdk-node": "^0.205.0",
     "express": "^5.1.0",
     "winston": "^3.17.0"
