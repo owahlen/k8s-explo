@@ -14,21 +14,19 @@ class MetricsConfig {
     @Bean
     fun dropActuatorFromHttpTimers(): MeterFilter =
         MeterFilter.deny { id ->
-            id.name == "http:server.requests" &&
-                    (id.getTag("uri")?.startsWith("/actuator/") == true)
+            id.name == "http.server.requests" &&
+                    (id.getTag("uri")?.startsWith("/actuator/") ?: false)
         }
 
     @Bean
-    fun pathTagConvention(): DefaultServerRequestObservationConvention {
-        return object : DefaultServerRequestObservationConvention() {
+    fun pathTagConvention(): DefaultServerRequestObservationConvention =
+        object : DefaultServerRequestObservationConvention() {
             override fun getLowCardinalityKeyValues(context: ServerRequestObservationContext): KeyValues {
-                val defaultKeyValues = super.getLowCardinalityKeyValues(context)
-                val path = context.carrier.uri.path
+                val base = super.getLowCardinalityKeyValues(context)
+                val path = context.carrier?.uri?.path ?: "UNKNOWN"
                 // WARNING: The path is a high-cardinality tag. Consider using a template
                 // or a different tag for production environments.
-                val customPathTag = KeyValue.of("path", path)
-                return defaultKeyValues.and(customPathTag)
+                return base.and(KeyValue.of("path", path))
             }
         }
-    }
 }
