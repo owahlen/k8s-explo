@@ -8,18 +8,16 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
-    tags:
-      service.namespace: default
-
-  otlp:
-    metrics:
-      export:
-        url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
 
   opentelemetry:
     resource-attributes:
       service.name: ${OTEL_SERVICE_NAME:forward-service-jvm}
       service.namespace: ${OTEL_SERVICE_NAMESPACE:default}
+
+  otlp:
+    metrics:
+      export:
+        url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
 
 spring:
   application:
