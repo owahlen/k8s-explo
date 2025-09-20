@@ -5,7 +5,7 @@ import {VitePluginNode} from 'vite-plugin-node';
 export default defineConfig({
     server: {
         // This allows Vite to start the server at a specific port.
-        port: 3000
+        port: 5173
     },
     build: {
         lib: {

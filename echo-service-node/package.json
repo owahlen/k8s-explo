@@ -4,7 +4,8 @@
   "description": "Simple echo of incoming requests",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "OTEL_ENABLED=false vite",
+    "dev:otel": "OTEL_EXPORTER_OTLP_ENDPOINT='http://localhost:4318' OTEL_METRICS_EXPORTER=otlp OTEL_EXPORTER_OTLP_METRICS_PROTOCOL='http/protobuf' OTEL_METRIC_EXPORT_INTERVAL=20000 OTEL_METRIC_EXPORT_TIMEOUT=20000 OTEL_SEMCONV_STABILITY_OPT_IN='http' OTEL_SERVICE_NAME='echo-service-node' OTEL_SERVICE_NAMESPACE='default' vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest --run",

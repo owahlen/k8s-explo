@@ -1,7 +1,10 @@
-import express, {Request, Response} from 'express';
-import logger from './logger.ts';
-import {fileURLToPath} from 'node:url';
-import {resolve} from 'node:path';
+import "./otel.ts";
+// Import Express dynamically so it's patched by OTel
+const { default: express } = await import("express");
+import type {Request, Response} from "express";
+import logger from "./logger.ts";
+import {fileURLToPath} from "node:url";
+import {resolve} from "node:path";
 import Undici from "undici";
 import fetch = Undici.fetch;
 import Pool = Undici.Pool;
@@ -19,7 +22,7 @@ function getPoolFor(origin: string): Pool {
     let pool = originPools.get(origin);
     if (!pool) {
         pool = new Pool(origin, {
-            pipelining: parseEnvInt('POOL_PIPELINING', 0) // set to 0 to disable keep-alive
+            pipelining: parseEnvInt("POOL_PIPELINING", 0) // set to 0 to disable keep-alive
         });
         originPools.set(origin, pool);
         logger.info(`Created Pool for origin: ${origin}`);
@@ -32,9 +35,9 @@ const port = process.env.PORT || 3001;
 
 app.use(express.json());
 
-app.get('/health', (_: Request, res: Response) => {
+app.get("/health", (_: Request, res: Response) => {
     const healthInfo = {
-        status: 'ok',
+        status: "ok",
         uptime: process.uptime(), // seconds the process has been running
         timestamp: new Date().toISOString(),
         memoryUsage: process.memoryUsage(), // rss, heapTotal, heapUsed, external, etc.
@@ -45,7 +48,7 @@ app.get('/health', (_: Request, res: Response) => {
 
 app.use(async (req: Request, res: Response) => {
     const start = Date.now();
-    const upstreamBase = process.env.ECHO_BASE_URL || 'http://localhost:3000';
+    const upstreamBase = process.env.ECHO_BASE_URL || "http://localhost:3000";
     const upstreamOrigin = new URL(upstreamBase).origin;
     const targetUrl = new URL(req.originalUrl, upstreamBase).toString();
 
@@ -53,7 +56,7 @@ app.use(async (req: Request, res: Response) => {
 
     try {
         const body =
-            (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')
+            (req.method === "POST" || req.method === "PUT" || req.method === "PATCH")
                 ? (Object.keys(req.body || {}).length ? JSON.stringify(req.body) : undefined)
                 : undefined;
 
@@ -61,7 +64,7 @@ app.use(async (req: Request, res: Response) => {
 
         const upstream = await fetch(targetUrl, {
             method: req.method,
-            headers: {'content-type': 'application/json'},
+            headers: {"content-type": "application/json"},
             body,
             dispatcher,
         });
@@ -78,20 +81,20 @@ app.use(async (req: Request, res: Response) => {
         res.status(upstream.status).json(data);
     } catch (err: any) {
         logger.error(`Forward error: ${err?.stack || err?.message || String(err)}`);
-        res.status(502).json({error: 'Bad Gateway', detail: 'Failed to reach upstream echo-service'});
+        res.status(502).json({error: "Bad Gateway", detail: "Failed to reach upstream echo-service"});
     }
 });
 
 export const viteNodeApp = app;
 
 const isRunDirect =
-    (typeof require !== 'undefined' && typeof module !== 'undefined')
+    (typeof require !== "undefined" && typeof module !== "undefined")
         ? require.main === module
         : (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url));
 
 if (isRunDirect) {
     app.listen(port, () => {
-        const upstreamBase = process.env.ECHO_BASE_URL || 'http://localhost:3000';
+        const upstreamBase = process.env.ECHO_BASE_URL || "http://localhost:3000";
         logger.info(`Forward service is listening on http://localhost:${port} (upstream: ${upstreamBase})`);
     });
 
@@ -103,6 +106,6 @@ if (isRunDirect) {
             );
         }
     };
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
 }

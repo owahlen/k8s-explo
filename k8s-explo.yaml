@@ -19,8 +19,6 @@ spec:
           image: owahlen/echo-service-node:dev
           imagePullPolicy: IfNotPresent
           env:
-            - name: NODE_OPTIONS
-              value: "--import @opentelemetry/auto-instrumentations-node/register"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
             - name: OTEL_METRICS_EXPORTER
@@ -38,8 +36,8 @@ spec:
             - name: OTEL_SERVICE_NAMESPACE
               value: default
             # Optional: enable SDK debug logs
-            - name: OTEL_LOG_LEVEL
-              value: debug
+            # - name: OTEL_LOG_LEVEL
+            #   value: debug
             # Optional: disable traces/logs if you only want metrics
             # - name: OTEL_TRACES_EXPORTER
             #   value: none
@@ -108,8 +106,6 @@ spec:
           image: owahlen/forward-service-node:dev
           imagePullPolicy: IfNotPresent
           env:
-            - name: NODE_OPTIONS
-              value: "--import @opentelemetry/auto-instrumentations-node/register"
             - name: POOL_PIPELINING
               value: "1"
             - name: ECHO_BASE_URL
@@ -207,6 +203,10 @@ spec:
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "5000"   # ms
+            - name: OTEL_METRIC_EXPORT_TIMEOUT
+              value: "5000"   # ms
             - name: OTEL_SERVICE_NAME
               value: forward-service-jvm
             - name: OTEL_SERVICE_NAMESPACE
@@ -223,25 +223,28 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 5
             failureThreshold: 60
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: 8080
             periodSeconds: 10
             failureThreshold: 3
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8080
             periodSeconds: 5
             failureThreshold: 3
+            timeoutSeconds: 5
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 500m
+              memory: 700Mi
             limits:
-              cpu: "1"
-              memory: 768Mi
+              cpu: 1000m
+              memory: 800Mi
 ---
 apiVersion: v1
 kind: Service
