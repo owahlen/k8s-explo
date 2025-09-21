@@ -3,5 +3,5 @@ import logger from "@/infra/logger.ts";
 
 export const errorHandler = (err: any, _req: Request, res: Response, _next: NextFunction) => {
     logger.error(err?.stack || err?.message || String(err));
-    res.status(502).json({error: "Bad Gateway", detail: "Upstream failure"});
+    res.status(500).json({error: "Internal Server Error"});
 }

@@ -1,30 +1,43 @@
 /// <reference types="vitest" />
 import {defineConfig} from 'vite';
 import {VitePluginNode} from 'vite-plugin-node';
+import * as path from "node:path";
 
-export default defineConfig({
+export default defineConfig(({command}) => {
+    const plugins = [];
+
+    if (command === 'serve') {
+        plugins.push(
+            ...VitePluginNode({
+                adapter: 'express',
+                appPath: './src/index.ts',
+            })
+        );
+    }
+
+    return {
+        plugins,
     server: {
-        // This allows Vite to start the server at a specific port.
-        port: 5173
+            port: 5173
+        },
+        resolve: {
+            alias: {
+                '@': path.resolve(__dirname, 'src'),
+            }
     },
     build: {
-        lib: {
-            // The entry file Vite will start bundling from
-            entry: "src/index.ts",
-            // Output format(s). "es" = standard ESM bundle
-            formats: ["es"]
+            target: 'node22',
+            ssr: true,
+            rollupOptions: {
+                input: "./src/server.ts",
+                output: {
+                    format: "es",
+                    entryFileNames: "[name].js",
         }
     },
-    plugins: [
-        ...VitePluginNode({
-            // The entry file for your application
-            appPath: './src/index.ts',
-            // The server adapter for Express
-            adapter: 'express',
-        })
-    ],
+        },
     test: {
-        // Vitest-specific options
         environment: 'node'
     },
+    };
 });

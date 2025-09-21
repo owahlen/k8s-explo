@@ -5,6 +5,7 @@ import {OTLPMetricExporter} from "@opentelemetry/exporter-metrics-otlp-http";
 import {HttpInstrumentation} from '@opentelemetry/instrumentation-http';
 import {ExpressInstrumentation} from '@opentelemetry/instrumentation-express';
 import {Attributes, Context, isSpanContextValid, trace} from "@opentelemetry/api";
+import {env} from "@/config/env.ts"; // central config
 
 // Prevent double init in dev/HMR
 declare global {
@@ -12,14 +13,9 @@ declare global {
     var __otelSdkStarted: boolean | undefined;
     // eslint-disable-next-line no-var
     var __otelSdkInstance: NodeSDK | undefined;
-    // eslint-disable-next-line no-var
-    var __otelShutdownHandlersInstalled: boolean | undefined;
 }
 
-// Optional switch: set OTEL_ENABLED=false to disable autostart on import
-const OTEL_ENABLED = process.env.OTEL_ENABLED !== "false";
-
-export async function startOtel(): Promise<void> {
+export const startOtel = async (): Promise<void> => {
     if (globalThis.__otelSdkStarted) return;
     globalThis.__otelSdkStarted = true;
 
@@ -28,8 +24,8 @@ export async function startOtel(): Promise<void> {
         "service.namespace": process.env.OTEL_SERVICE_NAMESPACE || "default",
     });
 
-    const exportInterval = parseInt(process.env.OTEL_METRIC_EXPORT_INTERVAL || "60000", 10);
-    const exportTimeout = parseInt(process.env.OTEL_METRIC_EXPORT_TIMEOUT || "30000", 10);
+    const exportInterval = env.otel.metricExportInterval;
+    const exportTimeout = env.otel.metricExportTimeout;
 
     const sdk = new NodeSDK({
         resource,
@@ -39,14 +35,14 @@ export async function startOtel(): Promise<void> {
         ],
         metricReaders: [
             new PeriodicExportingMetricReader({
-                exporter: new OTLPMetricExporter(),
+                exporter: new OTLPMetricExporter(), // Reads OTEL_EXPORTER_OTLP_* envs
                 exportIntervalMillis: exportInterval,
                 exportTimeoutMillis: exportTimeout,
             }),
         ],
         views: [
             {
-                instrumentName: 'http.server.request.duration',
+                instrumentName: "http.server.request.duration",
                 instrumentType: InstrumentType.HISTOGRAM,
                 attributesProcessors: [{
                     process: (incoming: Attributes, context?: Context): Attributes => {
@@ -54,13 +50,13 @@ export async function startOtel(): Promise<void> {
                             const span = trace.getSpan(context);
                             const spanContext = span?.spanContext();
                             if (spanContext && isSpanContextValid(spanContext)) {
-                                const path = span.attributes["url.path"]
+                                const path = span.attributes["url.path"];
                                 if (path) {
                                     incoming["path"] = path;
                                 }
                             }
                         }
-                        return incoming
+                        return incoming;
                     }
                 }],
             },
@@ -69,23 +65,20 @@ export async function startOtel(): Promise<void> {
 
     await sdk.start();
     globalThis.__otelSdkInstance = sdk;
+}
 
-    if (!globalThis.__otelShutdownHandlersInstalled) {
-        globalThis.__otelShutdownHandlersInstalled = true;
-        const shutdown = async () => {
-            try {
-                await sdk.shutdown();
-            } catch {
-                // swallow
-            } finally {
-                process.exit(0);
-            }
-        };
-        process.on("SIGTERM", shutdown);
-        process.on("SIGINT", shutdown);
+export const stopOtel = async (): Promise<void> => {
+    const sdk = globalThis.__otelSdkInstance;
+    if (!sdk) return;
+    try {
+        await sdk.shutdown(); // graceful: flush + shutdown
+    } finally {
+        globalThis.__otelSdkInstance = undefined;
+        globalThis.__otelSdkStarted = false;
     }
 }
 
-if (OTEL_ENABLED) {
+// Auto-start on import (unless explicitly disabled)
+if (env.otel.enabled) {
     await startOtel();
 }

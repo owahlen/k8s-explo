@@ -15,7 +15,7 @@ declare global {
     var __otelSdkInstance: NodeSDK | undefined;
 }
 
-export async function startOtel(): Promise<void> {
+export const startOtel = async (): Promise<void> => {
     if (globalThis.__otelSdkStarted) return;
     globalThis.__otelSdkStarted = true;
 
@@ -67,7 +67,7 @@ export async function startOtel(): Promise<void> {
     globalThis.__otelSdkInstance = sdk;
 }
 
-export async function stopOtel(): Promise<void> {
+export const stopOtel = async (): Promise<void> => {
     const sdk = globalThis.__otelSdkInstance;
     if (!sdk) return;
     try {

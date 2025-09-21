@@ -1,0 +1,63 @@
+name: Tests
+on:
+  push:
+    branches: ["**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: echo-service-node
+            path: echo-service-node
+            kind: node
+          - name: forward-service-node
+            path: forward-service-node
+            kind: node
+          - name: forward-service-jvm
+            path: forward-service-jvm
+            kind: jvm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node
+      - name: Setup Node
+        if: matrix.kind == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+
+      - name: Install deps
+        if: matrix.kind == 'node'
+        working-directory: ${{ matrix.path }}
+        run: npm ci
+
+      - name: Run tests
+        if: matrix.kind == 'node'
+        working-directory: ${{ matrix.path }}
+        run: npm test
+
+      # JVM
+      - name: Setup Java
+        if: matrix.kind == 'jvm'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Make wrapper executable
+        if: matrix.kind == 'jvm'
+        working-directory: ${{ matrix.path }}
+        run: chmod +x ./gradlew
+
+      - name: Run tests (Gradle)
+        if: matrix.kind == 'jvm'
+        working-directory: ${{ matrix.path }}
+        run: ./gradlew --no-daemon test

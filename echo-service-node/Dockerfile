@@ -30,9 +30,4 @@ USER node
 
 # Your app listens on 3000 by default
 EXPOSE 3000
-
-# Start the ESM build
-CMD ["node", "dist/index.js"]
-
-# build with: docker build -t owahlen/echo-service:1.0 .
-# push with:  docker push owahlen/echo-service:1.0
+CMD ["node", "dist/server.js"]

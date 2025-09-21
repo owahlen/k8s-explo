@@ -31,6 +31,3 @@ USER node
 # Your app listens on 3000 by default
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
-
-# build with: docker build -t owahlen/forward-service:1.0 .
-# push with:  docker push owahlen/forward-service:1.0

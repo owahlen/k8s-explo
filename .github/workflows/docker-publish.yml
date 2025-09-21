@@ -1,7 +1,9 @@
 name: Build and Push Docker images (dev)
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
     branches: ["**"]
 
 permissions:
@@ -13,6 +15,7 @@ env:
 jobs:
   build-and-push:
     name: Build and push images
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:

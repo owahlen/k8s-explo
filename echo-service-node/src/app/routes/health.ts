@@ -1,4 +1,4 @@
-import type {Request, Response} from "express";
+import type { Request, Response } from "express";
 import logger from "@/infra/logger.ts";
 
 export const healthRoute = async (_req: Request, res: Response) => {
