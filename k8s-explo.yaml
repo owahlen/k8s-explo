@@ -136,11 +136,11 @@ spec:
             #   value: none
           ports:
             - name: http
-              containerPort: 3001
+              containerPort: 3000
           readinessProbe:
             httpGet:
               path: /health
-              port: 3001
+              port: 3000
             initialDelaySeconds: 3
             periodSeconds: 10
             timeoutSeconds: 2
@@ -148,7 +148,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 3001
+              port: 3000
             initialDelaySeconds: 10
             periodSeconds: 20
             timeoutSeconds: 2
@@ -173,8 +173,8 @@ spec:
   type: ClusterIP
   ports:
     - name: http
-      port: 3001
-      targetPort: 3001
+      port: 3000
+      targetPort: 3000
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -281,7 +281,7 @@ spec:
               service:
                 name: forward-service-node
                 port:
-                  number: 3001
+                  number: 3000
           - path: /jvm(/|$)(.*)
             pathType: ImplementationSpecific
             backend:

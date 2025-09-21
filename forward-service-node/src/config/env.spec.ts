@@ -34,7 +34,7 @@ describe("env config (fromEnv)", () => {
 
   it("uses default numbers/strings/bools when env is unset", async () => {
         const { env } = await loadEnvModule();
-        expect(env.port).toBe(3001);
+        expect(env.port).toBe(3000);
         expect(env.forwardBaseURL).toBe("http://localhost:3000");
         expect(env.requestTimeout).toBe(15_000);
         expect(env.agent.keepAliveTimeout).toBe(4_000);

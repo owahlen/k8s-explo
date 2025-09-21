@@ -28,9 +28,9 @@ COPY --from=builder /app/dist ./dist
 # Run as non-root
 USER node
 
-# Your app listens on 3001 by default
-EXPOSE 3001
-CMD ["node", "dist/index.js"]
+# Your app listens on 3000 by default
+EXPOSE 3000
+CMD ["node", "dist/server.js"]
 
 # build with: docker build -t owahlen/forward-service:1.0 .
 # push with:  docker push owahlen/forward-service:1.0
