@@ -65,8 +65,10 @@
       "pluginVersion": "12.1.1",
       "targets": [
         {
-          "expr": "sum(increase(http_requests_total{service_name=~\"$service\"}[24h]))",
+          "editorMode": "code",
+          "expr": "sum(increase(http_server_request_duration_seconds_count{service_name=~\"$service\"}[24h]))",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -155,7 +157,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (k8s_pod_name) (rate(http_requests_total{service_name=~\"$service\", path=~\"$path\"}[5m]))",
+          "expr": "sum by (k8s_pod_name) (rate(http_server_request_duration_seconds_count{service_name=~\"$service\", path=~\"$path\"}[1m]))",
           "legendFormat": "{{k8s_pod_name}}",
           "range": true,
           "refId": "A"
@@ -218,7 +220,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -246,21 +248,21 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by (le, k8s_pod_name) (rate(http_request_duration_milliseconds_bucket{service_name=~\"$service\", path=~\"$path\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le, k8s_pod_name) (rate(http_server_request_duration_seconds_bucket{service_name=~\"$service\", path=~\"$path\"}[1m])))",
           "legendFormat": "p50: {{k8s_pod_name}}",
           "range": true,
           "refId": "A"
         },
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum by (le, k8s_pod_name) (rate(http_request_duration_milliseconds_bucket{service_name=~\"$service\", path=~\"$path\"}[5m])))",
+          "expr": "histogram_quantile(0.90, sum by (le, k8s_pod_name) (rate(http_server_request_duration_seconds_bucket{service_name=~\"$service\", path=~\"$path\"}[1m])))",
           "legendFormat": "p90: {{k8s_pod_name}}",
           "range": true,
           "refId": "B"
         },
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le, k8s_pod_name) (rate(http_request_duration_milliseconds_bucket{service_name=~\"$service\", path=~\"$path\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, k8s_pod_name) (rate(http_server_request_duration_seconds_bucket{service_name=~\"$service\", path=~\"$path\"}[1m])))",
           "legendFormat": "p95: {{k8s_pod_name}}",
           "range": true,
           "refId": "C"
@@ -323,7 +325,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -351,7 +353,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (k8s_pod_name) (rate(http_request_duration_milliseconds_sum{service_name=~\"$service\", path=~\"$path\"}[5m])) / sum by (k8s_pod_name) (rate(http_request_duration_milliseconds_count{service_name=~\"$service\", path=~\"$path\"}[5m]))",
+          "expr": "sum by (k8s_pod_name) (rate(http_server_request_duration_seconds_sum{service_name=~\"$service\", path=~\"$path\"}[1m])) / sum by (k8s_pod_name) (rate(http_server_request_duration_seconds_count{service_name=~\"$service\", path=~\"$path\"}[1m]))",
           "legendFormat": "{{k8s_pod_name}}",
           "range": true,
           "refId": "A"
@@ -413,7 +415,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "topk(10, sum by (path) (rate(http_requests_total{service_name=~\"$service\"}[5m])))",
+          "expr": "topk(10, sum by (path) (rate(http_server_request_duration_seconds_count{service_name=~\"echo-service-node\"}[5m])))",
           "format": "table",
           "instant": true,
           "range": false,
@@ -464,7 +466,7 @@
       },
       "id": 6,
       "options": {
-        "calculate": true,
+        "calculate": false,
         "calculation": {
           "xBuckets": {
             "value": ""
@@ -500,14 +502,15 @@
         "yAxis": {
           "axisPlacement": "left",
           "format": "ms",
-          "reverse": false
+          "reverse": false,
+          "unit": "s"
         }
       },
       "pluginVersion": "12.1.1",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (le) (rate(http_request_duration_milliseconds_bucket{service_name=~\"$service\", path=~\"$path\"}[5m]))",
+          "expr": "sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name=~\"$service\", path=~\"$path\"}[5m]))",
           "interval": "",
           "legendFormat": "{{le}}",
           "range": true,
@@ -519,12 +522,13 @@
     }
   ],
   "preload": false,
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 41,
   "tags": [
     "otel",
     "node",
-    "http"
+    "http",
+    "jvm"
   ],
   "templating": {
     "list": [
@@ -546,42 +550,52 @@
           "value": "$__all"
         },
         "datasource": "$DS_PROM",
-        "definition": "label_values(http_requests_total, service_name)",
+        "definition": "label_values(http_server_request_duration_seconds_count,service_name)",
         "includeAll": true,
         "label": "Service",
         "name": "service",
         "options": [],
-        "query": "label_values(http_requests_total, service_name)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(http_server_request_duration_seconds_count,service_name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
         "refresh": 1,
         "type": "query"
       },
       {
         "current": {
-          "text": "All",
+          "text": [
+            "/loadtest"
+          ],
           "value": [
-            "$__all"
+            "/loadtest"
           ]
         },
         "datasource": "$DS_PROM",
-        "definition": "label_values(http_requests_total{service_name=~\"$service\"}, path)",
+        "definition": "label_values(http_server_request_duration_seconds_count{service_name=~\"$service\"},path)",
         "includeAll": true,
         "label": "Path",
         "multi": true,
         "name": "path",
         "options": [],
-        "query": "label_values(http_requests_total{service_name=~\"$service\"}, path)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(http_server_request_duration_seconds_count{service_name=~\"$service\"},path)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
         "refresh": 1,
         "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Node.js Services",
   "uid": "node-otel-drill",
-  "version": 24
+  "version": 20
 }

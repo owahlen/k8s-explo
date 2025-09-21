@@ -35,7 +35,7 @@ const fromEnv = <T extends string | number | boolean | null>(name: string, def: 
 export const env = {
     port: fromEnv("PORT", 3000),
     otel: {
-        enabled: fromEnv("OTEL_ENABLED", false),
+        enabled: fromEnv("OTEL_ENABLED", true),
         metricExportInterval: fromEnv("OTEL_METRIC_EXPORT_INTERVAL", 60000),
         metricExportTimeout: fromEnv("OTEL_METRIC_EXPORT_TIMEOUT", 30000),
     }

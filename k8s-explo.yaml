@@ -106,8 +106,6 @@ spec:
           image: owahlen/forward-service-node:dev
           imagePullPolicy: IfNotPresent
           env:
-            - name: POOL_PIPELINING
-              value: "0"
             - name: FORWARD_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -126,6 +124,20 @@ spec:
               value: forward-service-node
             - name: OTEL_SERVICE_NAMESPACE
               value: default
+            - name: CONNECTIONS
+              value: "8"
+            - name: CLIENT_TTL
+              value: "30000"
+            - name: KEEPALIVE_TIMEOUT
+              value: "4000"
+            - name: KEEPALIVE_THRESHOLD
+              value: "1000"
+            - name: MAX_REQUESTS_PER_CLIENT
+              value: "50"
+            - name: PIPELINING
+              value: "1"
+            - name: ALLOW_H2
+              value: "false"
             # Optional: enable SDK debug logs
             # - name: OTEL_LOG_LEVEL
             #   value: debug
@@ -204,15 +216,29 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
             - name: OTEL_METRIC_EXPORT_INTERVAL
-              value: "5000"   # ms
+              value: "5000ms"   # ms
             - name: OTEL_METRIC_EXPORT_TIMEOUT
-              value: "5000"   # ms
+              value: "5000ms"   # ms
             - name: OTEL_SERVICE_NAME
               value: forward-service-jvm
             - name: OTEL_SERVICE_NAMESPACE
               value: default
+            - name: FORWARDER_MAX_INMEMORY
+              value: "4MB"
             - name: FORWARDER_KEEPALIVE
               value: "true"
+            - name: FORWARDER_CONNECTIONS
+              value: "40"
+            - name: FORWARDER_PENDING_ACQUIRE_MAX_COUNT
+              value: "1000"
+            - name: FORWARDER_PENDING_ACQUIRE_TIMEOUT
+              value: "15000"
+            - name: FORWARDER_MAX_LIVE_TIME
+              value: "30000"
+            - name: FORWARDER_MAX_IDLE_TIME
+              value: "4000"
+            - name: FORWARDER_ALLOW_H2
+              value: "false"
           ports:
             - name: http
               containerPort: 8080
@@ -235,7 +261,7 @@ spec:
             httpGet:
               path: /actuator/health/readiness
               port: 8080
-            periodSeconds: 5
+            periodSeconds: 30
             failureThreshold: 3
             timeoutSeconds: 5
           resources:

@@ -18,6 +18,9 @@ management:
     metrics:
       export:
         url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        step: ${OTEL_METRIC_EXPORT_INTERVAL:60s}
+        read-timeout: ${OTEL_METRIC_EXPORT_TIMEOUT:10s}
+
 
 spring:
   application:

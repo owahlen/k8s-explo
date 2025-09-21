@@ -1,3 +1,6 @@
+import Undici from 'undici';
+type AgentOptions = ConstructorParameters<typeof Undici.Agent>[0];
+
 const fromEnv = <T extends string | number | boolean | null>(name: string, def: T): T => {
     const val = process.env[name];
     if (val === "null") {
@@ -38,14 +41,15 @@ export const env = {
     requestTimeout: fromEnv("REQUEST_TIMEOUT", 15_000),
     agent: {
         connections: fromEnv("CONNECTIONS", null),
-        keepAliveTimeout: fromEnv("KEEPALIVE_TIMEOUT", 4_000),
-        keepAliveTimeoutThreshold: fromEnv("KEEPALIVE_THRESHOLD", 1_000),
-        maxRequestsPerClient: fromEnv("MAX_REQUESTS_PER_CLIENT", 5_000),
-        clientLifetime: fromEnv("CLIENT_LIFETIME", 60_000),
+        clientTtl: fromEnv("CLIENT_TTL", null),
+        keepAliveTimeout: fromEnv("KEEP_ALIVE_TIMEOUT", 4_000),
+        keepAliveTimeoutThreshold: fromEnv("KEEP_ALIVE_THRESHOLD", 1_000),
         pipelining: fromEnv("PIPELINING", 1),
-    },
+        maxRequestsPerClient: fromEnv("MAX_REQUESTS_PER_CLIENT", 5_000),
+        allowH2: fromEnv("ALLOW_H2", false),
+    } as AgentOptions,
     otel: {
-        enabled: fromEnv("OTEL_ENABLED", false),
+        enabled: fromEnv("OTEL_ENABLED", true),
         metricExportInterval: fromEnv("OTEL_METRIC_EXPORT_INTERVAL", 60000),
         metricExportTimeout: fromEnv("OTEL_METRIC_EXPORT_TIMEOUT", 30000),
     }

@@ -11,6 +11,7 @@ RUN ./gradlew clean bootJar -x test
 # ---- Run ----
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+RUN apk add --no-cache iproute2 curl
 COPY --from=build /workspace/build/libs/*-SNAPSHOT.jar app.jar
 
 ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
