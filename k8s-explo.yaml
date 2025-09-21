@@ -107,8 +107,8 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: POOL_PIPELINING
-              value: "1"
-            - name: ECHO_BASE_URL
+              value: "0"
+            - name: FORWARD_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
@@ -199,7 +199,7 @@ spec:
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+UseG1GC -XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=60 -XX:MaxMetaspaceSize=128m"
-            - name: ECHO_BASE_URL
+            - name: FORWARD_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
@@ -212,7 +212,7 @@ spec:
             - name: OTEL_SERVICE_NAMESPACE
               value: default
             - name: FORWARDER_KEEPALIVE
-              value: "false"
+              value: "true"
           ports:
             - name: http
               containerPort: 8080

@@ -48,13 +48,13 @@ npm test        # Vitest + Supertest
 # In a second terminal
 cd forward-service-node
 npm i
-ECHO_BASE_URL=http://localhost:3000 npm run dev   # http://localhost:3001
+FORWARD_BASE_URL=http://localhost:3000 npm run dev   # http://localhost:3001
 npm test
 
 # In a third terminal (JVM forwarder)
 cd ../forward-service-jvm
 ./gradlew test
-ECHO_BASE_URL=http://localhost:3000 ./gradlew bootRun   # http://localhost:8080 by default
+FORWARD_BASE_URL=http://localhost:3000 ./gradlew bootRun   # http://localhost:8080 by default
 ```
 Quick checks:
 - Echo (Node): `curl "http://localhost:3000/?client=test"`
@@ -126,8 +126,8 @@ ss -tanp
 
 ## Configuration & Health
 - Env (echo-node): `PORT` (3000), `LOG_LEVEL` (`info`)
-- Env (forward-node): `PORT` (3001), `ECHO_BASE_URL` (defaults to `http://localhost:3000`; set to `http://echo-service:3000` in cluster)
-- Env (forward-jvm): `ECHO_BASE_URL` (defaults to `http://localhost:3000`)
+- Env (forward-node): `PORT` (3001), `FORWARD_BASE_URL` (defaults to `http://localhost:3000`; set to `http://echo-service:3000` in cluster)
+- Env (forward-jvm): `FORWARD_BASE_URL` (defaults to `http://localhost:3000`)
 - Probes: readiness/liveness and resource limits defined in `k8s-explo.yaml` (Node services)
 - Containers run as non-root
 

@@ -18,7 +18,7 @@ import reactor.core.publisher.Flux
 class ForwardController(
     private val webClient: WebClient,
     // Inject base URL of the upstream service, default to localhost:3000 if not set
-    @param:Value("\${ECHO_BASE_URL:http://localhost:3000}") private val echoBaseUrl: String
+    @param:Value("\${FORWARD_BASE_URL:http://localhost:3000}") private val echoBaseUrl: String
 ) {
     private val log = LoggerFactory.getLogger(ForwardController::class.java)
 

@@ -79,15 +79,15 @@ class ForwardControllerIntegrationTest {
         // This method uses @DynamicPropertySource to provide dynamic properties to the Spring Boot test environment.
         // Spring invokes it before the ApplicationContext is created.
         // As a result, the fake upstream server is started, binds to a random free port,
-        // and the computed URL is registered under ECHO_BASE_URL.
-        // Any Spring beans with @Value("\${ECHO_BASE_URL}") will then receive the correct URL
+        // and the computed URL is registered under FORWARD_BASE_URL.
+        // Any Spring beans with @Value("\${FORWARD_BASE_URL}") will then receive the correct URL
         // of the fake upstream server.
         @Suppress("unused")
         @JvmStatic
         @DynamicPropertySource
         fun properties(registry: DynamicPropertyRegistry) {
             startIfNeeded()
-            registry.add("ECHO_BASE_URL") { "http://localhost:${upstream.port()}" }
+            registry.add("FORWARD_BASE_URL") { "http://localhost:${upstream.port()}" }
             // disable network connections for the otlp exporter
             registry.add("management.otlp.metrics.export.enabled") { false }
         }

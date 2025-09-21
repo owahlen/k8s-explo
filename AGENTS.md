@@ -15,11 +15,11 @@
 
 ## Build, Test, and Development Commands
 - Install deps (Node): `cd echo-service-node && npm ci`; `cd forward-service-node && npm ci`.
-- Dev (Node): echo on `3000` (`npm run dev`); forward-node on `3001` with `ECHO_BASE_URL=http://localhost:3000`.
+- Dev (Node): echo on `3000` (`npm run dev`); forward-node on `3001` with `FORWARD_BASE_URL=http://localhost:3000`.
 - Build (Node): `npm run build` (outputs to `dist/`).
 - Run built (Node): `npm start` or `node dist/index.js`.
 - Tests (Node): `npm test` in each service dir.
-- JVM forwarder (Kotlin): `cd forward-service-jvm && ./gradlew bootRun` (set `ECHO_BASE_URL`); tests via `./gradlew test`.
+- JVM forwarder (Kotlin): `cd forward-service-jvm && ./gradlew bootRun` (set `FORWARD_BASE_URL`); tests via `./gradlew test`.
 - Docker (Node images): `docker build -t <repo>/echo-service:<tag> echo-service-node` and `docker build -t <repo>/forward-service:<tag> forward-service-node`.
 - Kubernetes: `kubectl apply -f k8s-explo.yaml` (images must match tags used).
 
@@ -40,6 +40,6 @@
 
 ## Security & Configuration Tips
 - Containers run as non-root.
-- Env (echo-node): `PORT` (3000), `LOG_LEVEL` (`info`). Env (forwarders): `PORT` (3001 for node), `ECHO_BASE_URL`.
+- Env (echo-node): `PORT` (3000), `LOG_LEVEL` (`info`). Env (forwarders): `PORT` (3001 for node), `FORWARD_BASE_URL`.
 - Probes/limits: defined in `k8s-explo.yaml` for Node services; keep aligned with app behavior.
 - Example checks: echo `curl "http://localhost:3000/?client=test"`; forward POST to Node `http://localhost:3001/...` or JVM `http://localhost:8080/...` when running locally.
