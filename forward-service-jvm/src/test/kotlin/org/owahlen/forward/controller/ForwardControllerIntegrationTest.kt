@@ -129,21 +129,14 @@ class ForwardControllerIntegrationTest {
         // Act – make a request that your controller forwards
         client.get().uri("/metrics-check").exchange().expectStatus().isOk
 
-        // Assert – custom counter from ForwardMetrics exists and increments
-        val requestCounter = meterRegistry.find("http_requests_total")
-            .tags("path", "/metrics-check")
-            .counter()
-        assertThat(requestCounter).isNotNull()
-        assertThat(requestCounter!!.count()).isGreaterThan(0.0)
-
-        // Assert – custom duration summary from ForwardMetrics exists and records values
-        val durationSummary = meterRegistry.find("http_request_duration")
-            .tags("path", "/metrics-check")
-            .summary()
-        assertThat(durationSummary).isNotNull()
-        assertThat(durationSummary!!.count()).isGreaterThan(0)
-        // Accept totalAmount being 0.0 for extremely fast requests
-        assertThat(durationSummary.totalAmount()).isGreaterThanOrEqualTo(0.0)
+        // Assert – Reactor Netty HTTP client metrics exist and record values
+        val responseTimer = meterRegistry.find("reactor.netty.http.client.response.time")
+            .tags("uri", "/metrics-check", "method", "GET", "status", "200")
+            .timer()
+        assertThat(responseTimer).isNotNull()
+        assertThat(responseTimer!!.count()).isGreaterThan(0)
+        // Accept totalTime being 0.0 for extremely fast requests
+        assertThat(responseTimer.totalTime(java.util.concurrent.TimeUnit.SECONDS)).isGreaterThanOrEqualTo(0.0)
     }
 
 }

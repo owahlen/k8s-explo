@@ -47,7 +47,7 @@ helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring
 #export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring" -oname)
 #kubectl -n monitoring port-forward $POD_NAME 3000
 # Install the otel-collector
-kubectl -n monitoring apply -f otel-collector.yaml
+kubectl -n monitoring apply -f kubernetes/otel-collector.yaml
 
 # Install the grafana-dashboard
 helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring -f kubernetes/grafana-values.yaml
