@@ -22,7 +22,20 @@ A minimal multi-runtime setup to explore services locally and on minikube:
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/) in a matching version
 * [Install helm](https://helm.sh/docs/intro/install/)
 * Start the cluster: `minikube start --addons=metrics-server --addons=dashboard --addons=ingress`
-* Start the dashboard (optional): `minikube dashboard`
+
+Find out the minikube IP:
+```bash
+minikube ip
+```
+In this document, it is assumed that this IP is `192.168.49.2`.
+
+### Install the dashboard
+```bash
+kubectl apply -f kubernetes/dashboard-ingress.yaml
+```
+The dashboard is then reachable under
+http://192.168.49.2/dashboard/
+with user `admin` password `prom-operator`.
 
 ### Install Monitoring and Tracing
 ```bash
@@ -31,11 +44,19 @@ helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace
 
-export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring" -oname)
-kubectl -n monitoring port-forward $POD_NAME 3000
+#export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring" -oname)
+#kubectl -n monitoring port-forward $POD_NAME 3000
+# Install the otel-collector
 kubectl -n monitoring apply -f otel-collector.yaml
+
+# Install the grafana-dashboard
+helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring -f kubernetes/grafana-values.yaml
+kubectl apply -f kubernetes/grafana-ingress.yaml
 ```
-The `grafana` folder contains dashboards that can be imported.
+Grafana is then reachable under
+http://192.168.49.2/grafana/
+
+Note, that the `grafana` folder contains dashboards that can be imported.
 
 ### Running the services
 Run the services locally without minikube:

@@ -1,0 +1,36 @@
+# Ingress for Kubernetes Dashboard on /dashboard/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+  annotations:
+    # Dashboard service speaks HTTP
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+
+    # We’ll accept plain HTTP from the browser for local use
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+    # Use regex paths and rewrite /dashboard/<anything> -> /<anything>
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+
+    # Help apps that honor it (Dashboard has historically been finicky,
+    # but this doesn't hurt and helps with some proxies)
+    nginx.ingress.kubernetes.io/x-forwarded-prefix: "/dashboard"
+
+    # Make sure /dashboard (no trailing slash) redirects to /dashboard/
+    nginx.ingress.kubernetes.io/app-root: /dashboard/
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # Match /dashboard or /dashboard/ or /dashboard/anything
+          - path: /dashboard(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kubernetes-dashboard
+                port:
+                  number: 80
