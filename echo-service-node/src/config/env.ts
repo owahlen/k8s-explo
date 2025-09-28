@@ -34,6 +34,7 @@ const fromEnv = <T extends string | number | boolean | null>(name: string, def: 
 
 export const env = {
     port: fromEnv("PORT", 3000),
+    maxRequestsPerSocket: fromEnv("MAX_REQUESTS_PER_SOCKET", 3000),
     otel: {
         enabled: fromEnv("OTEL_ENABLED", true),
         metricExportInterval: fromEnv("OTEL_METRIC_EXPORT_INTERVAL", 60000),

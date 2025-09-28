@@ -19,6 +19,8 @@ spec:
           image: owahlen/echo-service-node:dev
           imagePullPolicy: IfNotPresent
           env:
+            - name: MAX_REQUESTS_PER_SOCKET
+              value: "50"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector.monitoring.svc:4318
             - name: OTEL_METRICS_EXPORTER
@@ -125,7 +127,7 @@ spec:
             - name: OTEL_SERVICE_NAMESPACE
               value: default
             - name: CONNECTIONS
-              value: "8"
+              value: "10"
             - name: CLIENT_TTL
               value: "30000"
             - name: KEEPALIVE_TIMEOUT
@@ -216,13 +218,6 @@ spec:
                 -XX:InitialRAMPercentage=60
                 -XX:MaxMetaspaceSize=128m
                 -XX:+ExitOnOutOfMemoryError
-                -Dcom.sun.management.jmxremote
-                -Dcom.sun.management.jmxremote.port=9010
-                -Dcom.sun.management.jmxremote.rmi.port=9010
-                -Dcom.sun.management.jmxremote.local.only=false
-                -Dcom.sun.management.jmxremote.authenticate=false
-                -Dcom.sun.management.jmxremote.ssl=false
-                -Djava.rmi.server.hostname=127.0.0.1
             - name: FORWARD_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -235,22 +230,8 @@ spec:
               value: forward-service-jvm
             - name: OTEL_SERVICE_NAMESPACE
               value: default
-            - name: FORWARDER_MAX_INMEMORY
-              value: "4MB"
-            - name: FORWARDER_KEEPALIVE
-              value: "true"
-            - name: FORWARDER_CONNECTIONS
-              value: "40"
-            - name: FORWARDER_PENDING_ACQUIRE_MAX_COUNT
-              value: "1000"
-            - name: FORWARDER_PENDING_ACQUIRE_TIMEOUT
-              value: "15000"
-            - name: FORWARDER_MAX_LIVE_TIME
-              value: "30000"
-            - name: FORWARDER_MAX_IDLE_TIME
-              value: "4000"
-            - name: FORWARDER_ALLOW_H2
-              value: "false"
+            - name: CLIENT_MAX_CONNECTIONS
+              value: "10"
           ports:
             - name: http
               containerPort: 8080

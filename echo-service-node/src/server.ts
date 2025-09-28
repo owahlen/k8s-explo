@@ -7,7 +7,8 @@ import logger from "@/infra/logger.ts";
 import {stopOtel} from "@/otel.ts";
 
 const app = buildApp();
-const server = http.createServer(app);
+const server = http.createServer(app)
+server.maxRequestsPerSocket = env.maxRequestsPerSocket;
 
 server.listen(env.port, () => {
     logger.info(`Echo service listening on http://localhost:${env.port}`);

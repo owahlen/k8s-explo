@@ -35,6 +35,7 @@ describe("env config (fromEnv)", () => {
     it("uses default numbers/strings/bools when env is unset", async () => {
         const {env} = await loadEnvModule();
         expect(env.port).toBe(3000);
+        expect(env.maxRequestsPerSocket).toBe(3000);
         expect(env.otel.enabled).toBe(true);
         expect(env.otel.metricExportInterval).toBe(60_000);
         expect(env.otel.metricExportTimeout).toBe(30_000);
@@ -42,11 +43,13 @@ describe("env config (fromEnv)", () => {
 
     it("parses numbers from env", async () => {
         process.env.PORT = "8080";
+        process.env.MAX_REQUESTS_PER_SOCKET = "50";
         process.env.OTEL_METRIC_EXPORT_INTERVAL = "30000";
         process.env.OTEL_METRIC_EXPORT_TIMEOUT = "15000";
         const {env} = await loadEnvModule();
 
         expect(env.port).toBe(8080);
+        expect(env.maxRequestsPerSocket).toBe(50);
         expect(env.otel.metricExportInterval).toBe(30000);
         expect(env.otel.metricExportTimeout).toBe(15000);
     });
