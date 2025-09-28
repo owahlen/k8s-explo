@@ -210,7 +210,19 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: JAVA_TOOL_OPTIONS
-              value: "-XX:+UseG1GC -XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=60 -XX:MaxMetaspaceSize=128m"
+              value: >-
+                -XX:+UseG1GC
+                -XX:MaxRAMPercentage=60
+                -XX:InitialRAMPercentage=60
+                -XX:MaxMetaspaceSize=128m
+                -XX:+ExitOnOutOfMemoryError
+                -Dcom.sun.management.jmxremote
+                -Dcom.sun.management.jmxremote.port=9010
+                -Dcom.sun.management.jmxremote.rmi.port=9010
+                -Dcom.sun.management.jmxremote.local.only=false
+                -Dcom.sun.management.jmxremote.authenticate=false
+                -Dcom.sun.management.jmxremote.ssl=false
+                -Djava.rmi.server.hostname=127.0.0.1
             - name: FORWARD_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -267,7 +279,7 @@ spec:
           resources:
             requests:
               cpu: 500m
-              memory: 700Mi
+              memory: 800Mi
             limits:
               cpu: 1000m
               memory: 800Mi

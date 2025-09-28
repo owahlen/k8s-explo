@@ -595,7 +595,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Node.js Services",
+  "title": "HTTP Dashboard",
   "uid": "node-otel-drill",
   "version": 20
 }

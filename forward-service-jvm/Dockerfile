@@ -9,7 +9,7 @@ COPY src src
 RUN ./gradlew clean bootJar -x test
 
 # ---- Run ----
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 RUN apk add --no-cache iproute2 curl
 COPY --from=build /workspace/build/libs/*-SNAPSHOT.jar app.jar
