@@ -1,4 +1,5 @@
 import Undici from 'undici';
+
 type AgentOptions = ConstructorParameters<typeof Undici.Agent>[0];
 
 const fromEnv = <T extends string | number | boolean | null>(name: string, def: T): T => {
@@ -37,6 +38,7 @@ const fromEnv = <T extends string | number | boolean | null>(name: string, def: 
 
 export const env = {
     port: fromEnv("PORT", 3000),
+    maxRequestsPerSocket: fromEnv("MAX_REQUESTS_PER_SOCKET", 3000),
     forwardBaseURL: fromEnv("FORWARD_BASE_URL", "http://localhost:3000"),
     requestTimeout: fromEnv("REQUEST_TIMEOUT", 15_000),
     agent: {

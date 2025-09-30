@@ -5,22 +5,22 @@ export let options = {
         node_load: {
             executor: "constant-arrival-rate",
             startTime: "0m",
-            rate: 400,
+            rate: 1000,
             timeUnit: "1s",
             preAllocatedVUs: 100,
-            maxVUs: 500,
+            maxVUs: 1000,
             duration: "7m",
             exec: "nodeTest",
         },
-        jvm_load: {
+        webflux_load: {
             executor: "constant-arrival-rate",
             startTime: "7m",
-            rate: 400,
+            rate: 1000,
             timeUnit: "1s",
             preAllocatedVUs: 100,
-            maxVUs: 500,
+            maxVUs: 1000,
             duration: "7m",
-            exec: "jvmTest",
+            exec: "webfluxTest",
         },
     },
 };
@@ -36,6 +36,6 @@ export function nodeTest() {
     http.get(`${BASE_URL}/node/loadtest`);
 }
 
-export function jvmTest() {
-    http.get(`${BASE_URL}/jvm/loadtest`);
+export function webfluxTest() {
+    http.get(`${BASE_URL}/webflux/loadtest`);
 }

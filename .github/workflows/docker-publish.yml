@@ -28,9 +28,12 @@ jobs:
           - name: forward-service-node
             context: forward-service-node
             repo: forward-service-node
-          - name: forward-service-jvm
-            context: forward-service-jvm
-            repo: forward-service-jvm
+          - name: forward-service-webflux
+            context: forward-service-webflux
+            repo: forward-service-webflux
+          - name: forward-service-mvc
+            context: forward-service-mvc
+            repo: forward-service-mvc
     steps:
       - name: Checkout
         uses: actions/checkout@v4

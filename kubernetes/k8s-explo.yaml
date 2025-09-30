@@ -193,22 +193,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: forward-service-jvm
+  name: forward-service-webflux
   labels:
-    app: forward-service-jvm
+    app: forward-service-webflux
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: forward-service-jvm
+      app: forward-service-webflux
   template:
     metadata:
       labels:
-        app: forward-service-jvm
+        app: forward-service-webflux
     spec:
       containers:
-        - name: forward-service-jvm
-          image: owahlen/forward-service-jvm:dev
+        - name: forward-service-webflux
+          image: owahlen/forward-service-webflux:dev
           imagePullPolicy: IfNotPresent
           env:
             - name: JAVA_TOOL_OPTIONS
@@ -227,7 +227,7 @@ spec:
             - name: OTEL_METRIC_EXPORT_TIMEOUT
               value: "5000ms"   # ms
             - name: OTEL_SERVICE_NAME
-              value: forward-service-jvm
+              value: forward-service-webflux
             - name: OTEL_SERVICE_NAMESPACE
               value: default
             - name: CLIENT_MAX_CONNECTIONS
@@ -268,12 +268,100 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: forward-service-jvm
+  name: forward-service-webflux
   labels:
-    app: forward-service-jvm
+    app: forward-service-webflux
 spec:
   selector:
-    app: forward-service-jvm
+    app: forward-service-webflux
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forward-service-mvc
+  labels:
+    app: forward-service-mvc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: forward-service-mvc
+  template:
+    metadata:
+      labels:
+        app: forward-service-mvc
+    spec:
+      containers:
+        - name: forward-service-mvc
+          image: owahlen/forward-service-mvc:dev
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -XX:+UseG1GC
+                -XX:MaxRAMPercentage=60
+                -XX:InitialRAMPercentage=60
+                -XX:MaxMetaspaceSize=128m
+                -XX:+ExitOnOutOfMemoryError
+            - name: FORWARD_BASE_URL
+              value: http://echo-service-node:3000
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "5000ms"   # ms
+            - name: OTEL_METRIC_EXPORT_TIMEOUT
+              value: "5000ms"   # ms
+            - name: OTEL_SERVICE_NAME
+              value: forward-service-mvc
+            - name: OTEL_SERVICE_NAMESPACE
+              value: default
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 30
+            failureThreshold: 3
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 500m
+              memory: 800Mi
+            limits:
+              cpu: 1000m
+              memory: 800Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forward-service-mvc
+  labels:
+    app: forward-service-mvc
+spec:
+  selector:
+    app: forward-service-mvc
   type: ClusterIP
   ports:
     - name: http
@@ -285,7 +373,7 @@ kind: Ingress
 metadata:
   name: forward-ingress
   annotations:
-    # Strip the leading "/node" or "/jvm" path prefix and forward the remainder
+    # Strip the leading "/node", "/webflux" or "/mvc" path prefix and forward the remainder
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -301,11 +389,18 @@ spec:
                 name: forward-service-node
                 port:
                   number: 3000
-          - path: /jvm(/|$)(.*)
+          - path: /webflux(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: forward-service-jvm
+                name: forward-service-webflux
+                port:
+                  number: 8080
+          - path: /mvc(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: forward-service-mvc
                 port:
                   number: 8080
 ---

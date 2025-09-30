@@ -9,6 +9,7 @@ import {stopOtel} from "@/otel.ts";
 
 const app = buildApp();
 const server = http.createServer(app);
+server.maxRequestsPerSocket = env.maxRequestsPerSocket;
 
 server.listen(env.port, () => {
     logger.info(`Forward service listening on http://localhost:${env.port} (upstream: ${env.forwardBaseURL})`);

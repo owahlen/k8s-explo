@@ -35,6 +35,7 @@ describe("env config (fromEnv)", () => {
     it("uses default numbers/strings/bools when env is unset", async () => {
         const {env} = await loadEnvModule();
         expect(env.port).toBe(3000);
+        expect(env.maxRequestsPerSocket).toBe(3000);
         expect(env.forwardBaseURL).toBe("http://localhost:3000");
         expect(env.requestTimeout).toBe(15_000);
         expect(env.agent.connections).toBe(null);
@@ -51,6 +52,7 @@ describe("env config (fromEnv)", () => {
 
     it("parses numbers from env", async () => {
         process.env.PORT = "8080";
+        process.env.MAX_REQUESTS_PER_SOCKET = "50";
         process.env.REQUEST_TIMEOUT = "20000";
         process.env.CONNECTIONS = "10";
         process.env.CLIENT_TTL = "4000";
@@ -63,6 +65,7 @@ describe("env config (fromEnv)", () => {
         const {env} = await loadEnvModule();
 
         expect(env.port).toBe(8080);
+        expect(env.maxRequestsPerSocket).toBe(50);
         expect(env.requestTimeout).toBe(20000);
         expect(env.agent.connections).toBeNull(); // connections has a null default, so it doesn't get parsed as a number
         expect(env.agent.clientTtl).toBeNull(); // clientTtl has a null default, so it doesn't get parsed as a number

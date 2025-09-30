@@ -17,8 +17,11 @@ jobs:
           - name: forward-service-node
             path: forward-service-node
             kind: node
-          - name: forward-service-jvm
-            path: forward-service-jvm
+          - name: forward-service-webflux
+            path: forward-service-webflux
+            kind: jvm
+          - name: forward-service-mvc
+            path: forward-service-mvc
             kind: jvm
     steps:
       - name: Checkout

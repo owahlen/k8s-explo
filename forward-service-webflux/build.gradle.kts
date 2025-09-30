@@ -7,7 +7,7 @@ plugins {
 
 group = "org.owahlen"
 version = "0.0.1-SNAPSHOT"
-description = "Request forwarder using Spring Boot"
+description = "Request forwarder using Spring Boot (webflux)"
 
 java {
 	toolchain {

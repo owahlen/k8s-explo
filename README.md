@@ -3,7 +3,8 @@
 A minimal multi-runtime setup to explore services locally and on minikube:
 - echo-service-node: echoes request details (TypeScript/Express).
 - forward-service-node: forwards requests to echo-service (TypeScript/Express).
-- forward-service-jvm: forwards requests to echo-service (Kotlin/Spring WebFlux).
+- forward-service-webflux: forwards requests to echo-service (Kotlin/Spring WebFlux).
+- forward-service-mvc: forwards requests to echo-service (Kotlin/Spring MVC; blocking IO).
 
 ## Prerequisites
 - Docker, Node.js 22+ and npm
@@ -12,8 +13,9 @@ A minimal multi-runtime setup to explore services locally and on minikube:
 ## Repo Layout
 - `echo-service-node/`: echo service (Vite build, Vitest tests)
 - `forward-service-node/`: forwards to echo-service (same stack)
-- `forward-service-jvm/`: forwards to echo-service (Spring Boot WebFlux)
-- `k8s-explo.yaml`: Deployments, Services (ClusterIP), and Ingress for Node services
+- `forward-service-webflux/`: forwards to echo-service (Spring Boot WebFlux)
+- `forward-service-mvc/`: forwards to echo-service (Spring Boot MVC)
+- `kubernetes/k8s-explo.yaml`: Deployments, Services (ClusterIP), and Ingress for Node, WebFlux, and MVC services
 - `http/`: sample requests
 
 ## Develop & Test Locally
@@ -72,18 +74,26 @@ npm i
 FORWARD_BASE_URL=http://localhost:3000 npm run dev   # http://localhost:3001
 npm test
 
-# In a third terminal (JVM forwarder)
-cd ../forward-service-jvm
+# In a third terminal (WebFlux forwarder)
+cd ../forward-service-webflux
 ./gradlew test
 FORWARD_BASE_URL=http://localhost:3000 ./gradlew bootRun   # http://localhost:8080 by default
 ```
 Quick checks:
 - Echo (Node): `curl "http://localhost:3000/?client=test"`
 - Forward-node (POST): `curl -X POST 'http://localhost:3001/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
-- Forward-jvm (POST): `curl -X POST 'http://localhost:8080/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
-- Health (JVM Actuator): `curl 'http://localhost:8080/actuator/health'`
+- Forward-webflux (POST): `curl -X POST 'http://localhost:8080/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
+- Health (WebFlux Actuator): `curl 'http://localhost:8080/actuator/health'`
+  
+# In a fourth terminal (MVC forwarder)
+cd ../forward-service-mvc
+./gradlew test
+FORWARD_BASE_URL=http://localhost:3000 ./gradlew bootRun   # http://localhost:8080 by default
+  
+- Forward-mvc (POST): `curl -X POST 'http://localhost:8080/echo/test' -H 'content-type: application/json' -d '{"hello":"world"}'`
+- Health (MVC Actuator): `curl 'http://localhost:8080/actuator/health'`
 
-## Build & Containerize (Node and JVM images)
+## Build & Containerize (Node and JVM WebFlux/MVC images)
 ```bash
 # switch Docker context to minikube
 eval $(minikube -p minikube docker-env)  # switch Docker context
@@ -94,8 +104,11 @@ kubectl rollout restart deploy echo-service-node
 docker build -t owahlen/forward-service-node:dev ./forward-service-node
 kubectl rollout restart deploy forward-service-node
 
-docker build -t owahlen/forward-service-jvm:dev ./forward-service-jvm
-kubectl rollout restart deploy forward-service-jvm
+docker build -t owahlen/forward-service-webflux:dev ./forward-service-webflux
+kubectl rollout restart deploy forward-service-webflux
+
+docker build -t owahlen/forward-service-mvc:dev ./forward-service-mvc
+kubectl rollout restart deploy forward-service-mvc
 
 # switch back Docker context
 eval $(minikube -p minikube docker-env -u)
@@ -111,30 +124,33 @@ On macOS it is also necessary to enable a minikube tunnel:
 minikube tunnel # start the tunnel
 minikube ip # retrieve the tunnel IP
 ```
-2) Make the images available to the cluster. Choose one:
-- Build inside Minikube’s Docker daemon:
+2) Make the images available to the cluster.
+Build inside Minikube’s Docker daemon:
 ```bash
 eval $(minikube docker-env)
-docker build -t owahlen/echo-service:1.0 echo-service-node
-docker build -t owahlen/forward-service:1.0 forward-service-node
-```
-- Or load a local image:
-```bash
-minikube image load owahlen/echo-service:1.0
-kubectl set image deployment/echo-service echo-service=echo-service:1.0 --record || true
-minikube image load owahlen/forward-service:1.0
-kubectl set image deployment/forward-service forward-service=forward-service:1.0 --record || true
+docker build -t owahlen/echo-service-node:dev echo-service-node
+docker build -t owahlen/forward-service-node:dev forward-service-node
+docker build -t owahlen/forward-service-webflux:dev forward-service-webflux
+docker build -t owahlen/forward-service-mvc:dev forward-service-mvc
 ```
 3) Apply manifests:
 ```bash
-kubectl apply -f k8s-explo.yaml
+kubectl apply -f kubernetes/k8s-explo.yaml
 kubectl get pods,svc,ingress
 ```
-4) Verify traffic:
+4) Verify traffic (via Ingress):
 ```bash
 MINIKUBE_IP=$(minikube ip)
-curl "http://$MINIKUBE_IP/echo/?client=test"
-curl -X POST "http://$MINIKUBE_IP/forward/test" -H 'content-type: application/json' -d '{"through":"forward"}'
+# Forward through Node forwarder
+curl -X POST "http://$MINIKUBE_IP/node/echo/test" -H 'content-type: application/json' -d '{"through":"node"}'
+
+# Forward through WebFlux forwarder
+curl -X POST "http://$MINIKUBE_IP/webflux/echo/test" -H 'content-type: application/json' -d '{"through":"webflux"}'
+curl "http://$MINIKUBE_IP/webflux/actuator/health"
+
+# Forward through MVC forwarder
+curl -X POST "http://$MINIKUBE_IP/mvc/echo/test" -H 'content-type: application/json' -d '{"through":"mvc"}'
+curl "http://$MINIKUBE_IP/mvc/actuator/health"
 ```
 (Alternatively, open `http/echo.http` in an HTTP client.)
 
@@ -148,7 +164,8 @@ ss -tanp
 ## Configuration & Health
 - Env (echo-node): `PORT` (3000), `LOG_LEVEL` (`info`)
 - Env (forward-node): `PORT` (3001), `FORWARD_BASE_URL` (defaults to `http://localhost:3000`; set to `http://echo-service:3000` in cluster)
-- Env (forward-jvm): `FORWARD_BASE_URL` (defaults to `http://localhost:3000`)
+- Env (forward-webflux): `FORWARD_BASE_URL` (defaults to `http://localhost:3000`)
+- Env (forward-mvc): `FORWARD_BASE_URL` (defaults to `http://localhost:3000`)
 - Probes: readiness/liveness and resource limits defined in `k8s-explo.yaml` (Node services)
 - Containers run as non-root
 

@@ -11,7 +11,7 @@ management:
 
   opentelemetry:
     resource-attributes:
-      service.name: ${OTEL_SERVICE_NAME:forward-service-jvm}
+      service.name: ${OTEL_SERVICE_NAME:forward-service-mvc}
       service.namespace: ${OTEL_SERVICE_NAMESPACE:default}
 
   otlp:
@@ -24,4 +24,4 @@ management:
 
 spring:
   application:
-    name: forward-service-jvm
+    name: forward-service-mvc
