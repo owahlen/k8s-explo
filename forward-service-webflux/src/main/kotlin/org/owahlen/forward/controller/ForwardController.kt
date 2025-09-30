@@ -35,7 +35,6 @@ class ForwardController(
     // as for example the /actuator/health endpoint
     @RequestMapping("/**")
     suspend fun forward(exchange: ServerWebExchange): ResponseEntity<Flux<DataBuffer>> {
-        val startNs = System.nanoTime()
         val req = exchange.request
 
         // Build the target URI by combining the base URL with incoming path + query string

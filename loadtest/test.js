@@ -2,25 +2,35 @@ import http from "k6/http";
 
 export let options = {
     scenarios: {
-        node_load: {
+        mvc_load: {
             executor: "constant-arrival-rate",
             startTime: "0m",
             rate: 1000,
             timeUnit: "1s",
             preAllocatedVUs: 100,
             maxVUs: 1000,
-            duration: "7m",
-            exec: "nodeTest",
+            duration: "5m",
+            exec: "mvcTest",
         },
         webflux_load: {
             executor: "constant-arrival-rate",
-            startTime: "7m",
+            startTime: "5m",
             rate: 1000,
             timeUnit: "1s",
             preAllocatedVUs: 100,
             maxVUs: 1000,
-            duration: "7m",
+            duration: "5m",
             exec: "webfluxTest",
+        },
+        node_load: {
+            executor: "constant-arrival-rate",
+            startTime: "10m",
+            rate: 1000,
+            timeUnit: "1s",
+            preAllocatedVUs: 100,
+            maxVUs: 1000,
+            duration: "5m",
+            exec: "nodeTest",
         },
     },
 };
@@ -32,10 +42,15 @@ const BASE_URL = (__ENV.HOME && __ENV.HOME.startsWith('/Users'))
     ? "http://127.0.0.1"
     : "http://192.168.49.2";
 
-export function nodeTest() {
-    http.get(`${BASE_URL}/node/loadtest`);
+export function mvcTest() {
+    http.get(`${BASE_URL}/mvc/loadtest`);
 }
 
 export function webfluxTest() {
     http.get(`${BASE_URL}/webflux/loadtest`);
 }
+
+export function nodeTest() {
+    http.get(`${BASE_URL}/node/loadtest`);
+}
+
