@@ -308,6 +308,8 @@ spec:
                 -XX:InitialRAMPercentage=60
                 -XX:MaxMetaspaceSize=128m
                 -XX:+ExitOnOutOfMemoryError
+            - name: VIRTUAL_THREADS_ENABLED
+              value: "true"
             - name: FORWARD_BASE_URL
               value: http://echo-service-node:3000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT

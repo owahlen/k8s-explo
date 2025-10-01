@@ -2,7 +2,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,info
+        include: health,metrics,info,threaddump
 
   metrics:
     distribution:
@@ -21,7 +21,9 @@ management:
         step: ${OTEL_METRIC_EXPORT_INTERVAL:60s}
         read-timeout: ${OTEL_METRIC_EXPORT_TIMEOUT:10s}
 
-
 spring:
   application:
     name: forward-service-mvc
+  threads:
+    virtual:
+      enabled: ${VIRTUAL_THREADS_ENABLED:false}
