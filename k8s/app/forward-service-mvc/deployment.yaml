@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forward-service-mvc
+  labels:
+    app: forward-service-mvc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: forward-service-mvc
+  template:
+    metadata:
+      labels:
+        app: forward-service-mvc
+    spec:
+      containers:
+        - name: forward-service-mvc
+          image: owahlen/forward-service-mvc:dev
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -XX:+UseG1GC
+                -XX:MaxRAMPercentage=60
+                -XX:InitialRAMPercentage=60
+                -XX:MaxMetaspaceSize=128m
+                -XX:+ExitOnOutOfMemoryError
+            - name: VIRTUAL_THREADS_ENABLED
+              value: "true"
+            - name: FORWARD_BASE_URL
+              value: http://echo-service-node:3000
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "5000ms"   # ms
+            - name: OTEL_METRIC_EXPORT_TIMEOUT
+              value: "5000ms"   # ms
+            - name: OTEL_SERVICE_NAME
+              value: forward-service-mvc
+            - name: OTEL_SERVICE_NAMESPACE
+              value: default
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 30
+            failureThreshold: 3
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 500m
+              memory: 800Mi
+            limits:
+              cpu: 1000m
+              memory: 800Mi

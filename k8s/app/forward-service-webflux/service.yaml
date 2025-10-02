@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: forward-service-webflux
+  labels:
+    app: forward-service-webflux
+spec:
+  selector:
+    app: forward-service-webflux
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

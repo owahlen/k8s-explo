@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forward-ingress
+  annotations:
+    # Strip the leading "/node", "/webflux" or "/mvc" path prefix and forward the remainder
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /node(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: forward-service-node
+                port:
+                  number: 3000
+          - path: /webflux(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: forward-service-webflux
+                port:
+                  number: 8080
+          - path: /mvc(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: forward-service-mvc
+                port:
+                  number: 8080
