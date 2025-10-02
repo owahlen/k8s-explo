@@ -59,6 +59,19 @@ spec:
             #   value: none
             # - name: OTEL_LOGS_EXPORTER
             #   value: none
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POSTGRES_URL
+              value: jdbc:postgresql://forward-db:5432/forwarddb
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
           ports:
             - name: http
               containerPort: 3000

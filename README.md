@@ -15,7 +15,7 @@ A minimal multi-runtime setup to explore services locally and on minikube:
 - `forward-service-node/`: forwards to echo-service (same stack)
 - `forward-service-webflux/`: forwards to echo-service (Spring Boot WebFlux)
 - `forward-service-mvc/`: forwards to echo-service (Spring Boot MVC)
-- `kubernetes/k8s-explo.yaml`: Deployments, Services (ClusterIP), and Ingress for Node, WebFlux, and MVC services
+- `k8s/`: Deployments, Services (ClusterIP), and Ingress for Node, WebFlux, and MVC services
 - `http/`: sample requests
 
 ## Develop & Test Locally
@@ -33,7 +33,7 @@ In this document, it is assumed that this IP is `192.168.49.2`.
 
 ### Install the dashboard
 ```bash
-kubectl apply -f kubernetes/dashboard-ingress.yaml
+kubectl apply -f k8s/monitoring/dashboard-ingress.yaml
 ```
 The dashboard is then reachable under
 http://192.168.49.2/dashboard/
@@ -49,11 +49,11 @@ helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring
 #export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring" -oname)
 #kubectl -n monitoring port-forward $POD_NAME 3000
 # Install the otel-collector
-kubectl -n monitoring apply -f kubernetes/otel-collector.yaml
+kubectl -n monitoring apply -f k8s/monitoring/otel-collector.yaml
 
 # Install the grafana-dashboard
-helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring -f kubernetes/grafana-values.yaml
-kubectl apply -f kubernetes/grafana-ingress.yaml
+helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring -f k8s/monitoring/grafana-values.yaml
+kubectl apply -f k8s/monitoring/grafana-ingress.yaml
 ```
 Grafana is then reachable under
 http://192.168.49.2/grafana/
@@ -135,7 +135,7 @@ docker build -t owahlen/forward-service-mvc:dev forward-service-mvc
 ```
 3) Apply manifests:
 ```bash
-kubectl apply -f kubernetes/k8s-explo.yaml
+kubectl apply -f k8s/app
 kubectl get pods,svc,ingress
 ```
 4) Verify traffic (via Ingress):

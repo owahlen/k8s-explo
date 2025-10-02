@@ -1,11 +1,13 @@
 package org.owahlen.forward.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.sun.net.httpserver.HttpServer
 import io.micrometer.core.instrument.MeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.owahlen.forward.repository.ForwardLogRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
@@ -15,7 +17,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import com.sun.net.httpserver.HttpServer
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.net.InetSocketAddress
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -24,6 +26,10 @@ class ForwardControllerIntegrationTest {
 
     @Autowired
     lateinit var rest: TestRestTemplate
+
+    // do not write to the real database
+    @MockitoBean
+    lateinit var forwardLogRepository: ForwardLogRepository
 
     @Autowired
     lateinit var meterRegistry: MeterRegistry

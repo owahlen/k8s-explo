@@ -7,7 +7,6 @@ metadata:
 spec:
   selector:
     app: forward-db
-  type: ClusterIP
   ports:
     - name: postgres
       port: 5432
@@ -38,15 +37,22 @@ spec:
       labels:
         app: forward-db
     spec:
+      terminationGracePeriodSeconds: 60
       securityContext:
-        fsGroup: 999  # postgres User-ID in the official image
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: postgres
           image: postgres:16
           imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 5432
-              name: postgres
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: POSTGRES_DB
               value: forwarddb
@@ -57,20 +63,27 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "app", "-d", "forwarddb", "-h", "127.0.0.1"]
+            failureThreshold: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "app"]
-            initialDelaySeconds: 10
+              command: ["pg_isready", "-U", "app", "-d", "forwarddb", "-h", "127.0.0.1"]
+            initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           livenessProbe:
             exec:
-              command: ["pg_isready", "-U", "postgres"]
-            initialDelaySeconds: 30
+              command: ["pg_isready", "-U", "app", "-d", "forwarddb", "-h", "127.0.0.1"]
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
@@ -88,4 +101,4 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 1Gi
+            storage: 10Gi

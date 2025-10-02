@@ -45,6 +45,10 @@ spec:
             #   value: none
             # - name: OTEL_LOGS_EXPORTER
             #   value: none
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           ports:
             - name: http
               containerPort: 3000

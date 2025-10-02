@@ -1,0 +1,62 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,threaddump
+
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+  opentelemetry:
+    resource-attributes:
+      service.name: ${OTEL_SERVICE_NAME:forward-service-mvc}
+      service.namespace: ${OTEL_SERVICE_NAMESPACE:default}
+
+  otlp:
+    metrics:
+      export:
+        url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        step: ${OTEL_METRIC_EXPORT_INTERVAL:60s}
+        read-timeout: ${OTEL_METRIC_EXPORT_TIMEOUT:10s}
+
+spring:
+  application:
+    name: forward-service-mvc
+  threads:
+    virtual:
+      enabled: ${VIRTUAL_THREADS_ENABLED:false}
+
+  datasource:
+    # In-cluster DNS for your Service (same namespace). Override via env if needed.
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/forwarddb}
+    username: ${POSTGRES_USER:app}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:10}
+      minimum-idle: ${DB_MIN_IDLE:2}
+      connection-timeout: ${DB_CONN_TIMEOUT_MS:30000}
+      validation-timeout: 5000
+      # fail fast if the DB is unavailable at startup
+      initialization-fail-timeout: 1
+
+  jpa:
+    hibernate:
+      ddl-auto: none     # use Flyway for schema management
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.format_sql: false
+      hibernate.show_sql: ${JPA_SHOW_SQL:false}
+
+  flyway:
+    enabled: true
+    # Uses the same DB as DataSource; kept explicit for clarity/overrides
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/forwarddb}
+    user: ${POSTGRES_USER:app}
+    password: ${POSTGRES_PASSWORD:postgres}
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
+    # set to true only if migrating an existing non-versioned schema
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
