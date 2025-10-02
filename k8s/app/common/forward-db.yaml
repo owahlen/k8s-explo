@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: forward-db
+  labels:
+    app: forward-db
+spec:
+  selector:
+    app: forward-db
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+data:
+  POSTGRES_PASSWORD: cG9zdGdyZXM=  # "postgres" encoded in base64
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: forward-db
+  labels:
+    app: forward-db
+spec:
+  serviceName: forward-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forward-db
+  template:
+    metadata:
+      labels:
+        app: forward-db
+    spec:
+      securityContext:
+        fsGroup: 999  # postgres User-ID in the official image
+      containers:
+        - name: postgres
+          image: postgres:16
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: forwarddb
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "app"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
