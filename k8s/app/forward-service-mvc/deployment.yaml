@@ -40,6 +40,8 @@ spec:
               value: forward-service-mvc
             - name: OTEL_SERVICE_NAMESPACE
               value: default
+            - name: OTEL_ENABLED
+              value: "true"
             - name: POD_NAME
               valueFrom:
                 fieldRef:

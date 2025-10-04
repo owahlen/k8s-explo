@@ -26,8 +26,8 @@ class ForwardLogRepositoryTest {
                 httpStatus = 200
             )
         )
-
-        val found = repository.findById(saved.id)
+        assertThat(saved.id).isNotNull
+        val found = repository.findById(saved.id!!)
         assertThat(found).isPresent
         assertThat(found.get().podName).isEqualTo("test-pod")
         assertThat(repository.count()).isEqualTo(1)

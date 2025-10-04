@@ -16,8 +16,8 @@ import java.time.Instant
 @Service
 class ForwardService(
     private val restClientBuilder: RestClient.Builder,
-    private val repository: ForwardLogRepository,
-    @param:Value("\${FORWARD_BASE_URL:http://localhost:5173}") private val echoBaseUrl: String,
+    private val forwardLogRepository: ForwardLogRepository,
+    @param:Value("\${FORWARD_BASE_URL:http://localhost:3000}") private val echoBaseUrl: String,
     @param:Value("\${POD_NAME:forward-service-mvc}") private val podName: String
 ) {
     private val log = LoggerFactory.getLogger(ForwardService::class.java)
@@ -72,7 +72,7 @@ class ForwardService(
             podName = podName,
             httpStatus = upstream.statusCode.value()
         )
-        repository.save(entry)
+        forwardLogRepository.save(entry)
 
         val respHeaders = HttpHeaders()
         upstream.headers.forEach { (k, v) ->

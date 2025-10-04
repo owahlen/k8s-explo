@@ -38,6 +38,8 @@ spec:
               value: forward-service-webflux
             - name: OTEL_SERVICE_NAMESPACE
               value: default
+            - name: OTEL_ENABLED
+              value: "true"
             - name: CLIENT_MAX_CONNECTIONS
               value: "10"
             - name: POD_NAME

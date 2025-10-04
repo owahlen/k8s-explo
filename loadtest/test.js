@@ -9,7 +9,7 @@ export let options = {
             timeUnit: "1s",
             preAllocatedVUs: 100,
             maxVUs: 1000,
-            duration: "5m",
+            duration: "15m",
             exec: "mvcTest",
         },
         // webflux_load: {

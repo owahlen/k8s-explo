@@ -1,3 +1,8 @@
+logging:
+  level:
+    org.hibernate.SQL: INFO # DEBUG
+    org.hibernate.orm.jdbc.bind: INFO # TRACE
+
 management:
   endpoints:
     web:
@@ -20,6 +25,7 @@ management:
         url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
         step: ${OTEL_METRIC_EXPORT_INTERVAL:60s}
         read-timeout: ${OTEL_METRIC_EXPORT_TIMEOUT:10s}
+        enabled: ${OTEL_ENABLED:false}
 
 spring:
   application:
@@ -49,7 +55,6 @@ spring:
     properties:
       hibernate.jdbc.time_zone: UTC
       hibernate.format_sql: false
-      hibernate.show_sql: ${JPA_SHOW_SQL:false}
 
   flyway:
     enabled: true

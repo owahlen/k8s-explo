@@ -2,8 +2,10 @@ package org.owahlen.forward.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.UuidGenerator
 import java.time.Instant
 import java.util.*
 
@@ -11,8 +13,10 @@ import java.util.*
 @Table(name = "FORWARD_LOG")
 data class ForwardLog(
     @Id
-    @Column(name = "ID", nullable = false)
-    val id: UUID = UUID.randomUUID(),
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "ID", updatable = false, nullable = false)
+    var id: UUID? = null,
 
     @Column(name = "LOG_DATE", nullable = false)
     val logDate: Instant,
@@ -24,5 +28,5 @@ data class ForwardLog(
     val httpStatus: Int
 ) {
     // JPA requires a no-arg constructor. Hibernate can use it to instantiate the entity.
-    protected constructor() : this(UUID.randomUUID(), Instant.EPOCH, "", 0)
+    protected constructor() : this(null, Instant.EPOCH, "", 0)
 }
