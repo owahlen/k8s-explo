@@ -22,15 +22,18 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
+	implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+	runtimeOnly("org.postgresql:r2dbc-postgresql")
 	runtimeOnly("io.micrometer:micrometer-registry-otlp")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("io.projectreactor:reactor-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+	testImplementation("io.r2dbc:r2dbc-h2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

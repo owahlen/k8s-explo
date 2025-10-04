@@ -46,8 +46,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: POSTGRES_URL
-              value: jdbc:postgresql://forward-db:5432/forwarddb
+            - name: POSTGRES_R2DBC_URL
+              value: r2dbc:postgresql://forward-db:5432/forwarddb
             - name: POSTGRES_USER
               value: app
             - name: POSTGRES_PASSWORD
