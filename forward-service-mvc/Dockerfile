@@ -2,10 +2,24 @@
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
 
-# Copy the full multi-project workspace so Gradle can resolve all modules
-COPY . .
+# Copy project independent build system files first to leverage Docker layer caching
+COPY gradle gradle
+COPY gradlew ./
 RUN chmod +x gradlew
-RUN ./gradlew :forward-service-mvc:bootJar -x test
+RUN ./gradlew --no-daemon --version
+
+# Copy build configuration files
+RUN mkdir -p echo-service-node forward-service-node forward-service-webflux
+COPY gradlew settings.gradle.kts build.gradle.kts ./
+COPY forward-service-mvc/build.gradle.kts forward-service-mvc/
+COPY forwarddb/build.gradle.kts forwarddb/
+
+# Copy application sources (invalidate cache only when sources change)
+COPY forwarddb/src forwarddb/src
+COPY forward-service-mvc forward-service-mvc
+
+# Build the application
+RUN ./gradlew :forward-service-mvc:bootJar -x test --no-daemon
 
 # ---- Run ----
 FROM eclipse-temurin:25-jre-alpine

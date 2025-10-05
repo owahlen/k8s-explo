@@ -1,23 +1,17 @@
-import {beforeAll, afterAll, beforeEach, describe, expect, it, vi} from "vitest";
+import { beforeAll, afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Keep a pristine copy of process.env so we can restore it after tests
-const ORIGINAL_ENV = {...process.env};
-
-// If there are vars you want to preserve across tests, list them here:
-const KEEP: string[] = [
-    // "NODE_ENV",
-];
+const ORIGINAL_ENV = { ...process.env };
+const KEEP: string[] = [];
 
 async function loadEnvModule() {
-    // Force re-import so the `env` constant is recomputed with current process.env
     vi.resetModules();
-    return await import("./env.ts"); // e.g., "../src/config/env"
+    const { env } = await import('./env.ts');
+    return env;
 }
 
-describe("env config (fromEnv)", () => {
+describe('env config (fromEnv)', () => {
     beforeAll(() => {
-        // Ensure tests are not influenced by shell env
-        process.env = {...ORIGINAL_ENV};
+        process.env = { ...ORIGINAL_ENV };
     });
 
     afterAll(() => {
@@ -25,21 +19,21 @@ describe("env config (fromEnv)", () => {
     });
 
     beforeEach(() => {
-        // Clean slate every test
-        for (const k of Object.keys(process.env)) {
-            if (KEEP.includes(k)) continue;
-            delete process.env[k];
+        for (const key of Object.keys(process.env)) {
+            if (KEEP.includes(key)) continue;
+            delete process.env[key];
         }
     });
 
-    it("uses default numbers/strings/bools when env is unset", async () => {
-        const {env} = await loadEnvModule();
+    it('uses expected defaults when env is unset', async () => {
+        const env = await loadEnvModule();
         expect(env.port).toBe(3000);
         expect(env.maxRequestsPerSocket).toBe(3000);
-        expect(env.forwardBaseURL).toBe("http://localhost:3000");
+        expect(env.forwardBaseURL).toBe('http://localhost:3000');
         expect(env.requestTimeout).toBe(15_000);
+        expect(env.podName).toBe('forward-service-node');
         expect(env.agent.connections).toBe(null);
-        expect(env.agent?.clientTtl).toBe(null);
+        expect(env.agent.clientTtl).toBe(null);
         expect(env.agent.keepAliveTimeout).toBe(4_000);
         expect(env.agent.keepAliveTimeoutThreshold).toBe(1_000);
         expect(env.agent.pipelining).toBe(1);
@@ -48,72 +42,103 @@ describe("env config (fromEnv)", () => {
         expect(env.otel.enabled).toBe(true);
         expect(env.otel.metricExportInterval).toBe(60_000);
         expect(env.otel.metricExportTimeout).toBe(30_000);
+        expect(env.database.connectionString).toBe('postgresql://localhost:5432/forwarddb');
+        expect(env.database.user).toBe('app');
+        expect(env.database.password).toBe('postgres');
+        expect(env.database.ssl).toBe(false);
+        expect(env.database.pool.max).toBe(10);
+        expect(env.database.pool.idleTimeoutMillis).toBe(30_000);
+        expect(env.database.pool.connectionTimeoutMillis).toBe(5_000);
     });
 
-    it("parses numbers from env", async () => {
-        process.env.PORT = "8080";
-        process.env.MAX_REQUESTS_PER_SOCKET = "50";
-        process.env.REQUEST_TIMEOUT = "20000";
-        process.env.CONNECTIONS = "10";
-        process.env.CLIENT_TTL = "4000";
-        process.env.KEEP_ALIVE_TIMEOUT = "7000";
-        process.env.KEEP_ALIVE_THRESHOLD = "1500";
-        process.env.PIPELINING = "3";
-        process.env.MAX_REQUESTS_PER_CLIENT = "12345";
-        process.env.OTEL_METRIC_EXPORT_INTERVAL = "30000";
-        process.env.OTEL_METRIC_EXPORT_TIMEOUT = "15000";
-        const {env} = await loadEnvModule();
+    it('parses numbers from env', async () => {
+        process.env.PORT = '8080';
+        process.env.MAX_REQUESTS_PER_SOCKET = '50';
+        process.env.REQUEST_TIMEOUT = '20000';
+        process.env.CONNECTIONS = '10';
+        process.env.CLIENT_TTL = '4000';
+        process.env.KEEP_ALIVE_TIMEOUT = '7000';
+        process.env.KEEP_ALIVE_THRESHOLD = '1500';
+        process.env.PIPELINING = '3';
+        process.env.MAX_REQUESTS_PER_CLIENT = '12345';
+        process.env.OTEL_METRIC_EXPORT_INTERVAL = '30000';
+        process.env.OTEL_METRIC_EXPORT_TIMEOUT = '15000';
+        process.env.DB_POOL_MAX = '20';
+        process.env.DB_POOL_IDLE_TIMEOUT = '45000';
+        process.env.DB_POOL_CONNECTION_TIMEOUT = '6000';
+        process.env.POSTGRES_PORT = '6543';
+
+        const env = await loadEnvModule();
 
         expect(env.port).toBe(8080);
         expect(env.maxRequestsPerSocket).toBe(50);
         expect(env.requestTimeout).toBe(20000);
-        expect(env.agent.connections).toBeNull(); // connections has a null default, so it doesn't get parsed as a number
-        expect(env.agent.clientTtl).toBeNull(); // clientTtl has a null default, so it doesn't get parsed as a number
+        expect(env.agent.connections).toBe(10);
+        expect(env.agent.clientTtl).toBe(4000);
         expect(env.agent.keepAliveTimeout).toBe(7000);
         expect(env.agent.keepAliveTimeoutThreshold).toBe(1500);
         expect(env.agent.pipelining).toBe(3);
         expect(env.agent.maxRequestsPerClient).toBe(12345);
         expect(env.otel.metricExportInterval).toBe(30000);
         expect(env.otel.metricExportTimeout).toBe(15000);
+        expect(env.database.pool.max).toBe(20);
+        expect(env.database.pool.idleTimeoutMillis).toBe(45000);
+        expect(env.database.pool.connectionTimeoutMillis).toBe(6000);
+        expect(env.database.connectionString).toBe('postgresql://localhost:6543/forwarddb');
     });
 
-    it("parses booleans from env", async () => {
-        // Test OTEL_ENABLED
-        process.env.OTEL_ENABLED = "true";
-        process.env.ALLOW_H2 = "false";
-        let mod = await loadEnvModule();
-        expect(mod.env.otel.enabled).toBe(true);
-        expect(mod.env.agent.allowH2).toBe(false);
+    it('parses booleans from env', async () => {
+        process.env.OTEL_ENABLED = 'true';
+        process.env.ALLOW_H2 = 'false';
+        process.env.POSTGRES_SSL = 'true';
 
-        // Test with opposite values
-        process.env.OTEL_ENABLED = "false";
-        process.env.ALLOW_H2 = "true";
-        mod = await loadEnvModule();
-        expect(mod.env.otel.enabled).toBe(false);
-        expect(mod.env.agent.allowH2).toBe(true);
+        const env = await loadEnvModule();
+        expect(env.otel.enabled).toBe(true);
+        expect(env.agent.allowH2).toBe(false);
+        expect(env.database.ssl).toBe(true);
+
+        process.env.OTEL_ENABLED = 'false';
+        process.env.ALLOW_H2 = 'true';
+        process.env.POSTGRES_SSL = 'false';
+
+        const envDisabled = await loadEnvModule();
+        expect(envDisabled.otel.enabled).toBe(false);
+        expect(envDisabled.agent.allowH2).toBe(true);
+        expect(envDisabled.database.ssl).toBe(false);
     });
 
     it('treats the literal string "null" as null', async () => {
-        process.env.CONNECTIONS = "null";
-        const {env} = await loadEnvModule();
+        process.env.CONNECTIONS = 'null';
+        process.env.CLIENT_TTL = 'null';
+        const env = await loadEnvModule();
         expect(env.agent.connections).toBeNull();
+        expect(env.agent.clientTtl).toBeNull();
     });
 
-    it("falls back to default when numeric env is invalid (e.g., NaN)", async () => {
-        process.env.KEEP_ALIVE_TIMEOUT = "not-a-number";
-        const {env} = await loadEnvModule();
+    it('falls back to defaults when numeric env is invalid', async () => {
+        process.env.KEEP_ALIVE_TIMEOUT = 'not-a-number';
+        process.env.DB_POOL_MAX = 'nope';
+        const env = await loadEnvModule();
         expect(env.agent.keepAliveTimeout).toBe(4_000);
+        expect(env.database.pool.max).toBe(10);
     });
 
-    it("parses strings from env", async () => {
-        process.env.FORWARD_BASE_URL = "http://example.internal:9999";
-        const {env} = await loadEnvModule();
-        expect(env.forwardBaseURL).toBe("http://example.internal:9999");
+    it('parses custom URLs and credentials', async () => {
+        process.env.FORWARD_BASE_URL = 'http://example.internal:9999';
+        process.env.POSTGRES_URL = 'jdbc:postgresql://db.internal:6000/customdb';
+        process.env.POSTGRES_USER = 'custom';
+        process.env.POSTGRES_PASSWORD = 'secret';
+
+        const env = await loadEnvModule();
+        expect(env.forwardBaseURL).toBe('http://example.internal:9999');
+        expect(env.database.connectionString).toBe('postgresql://db.internal:6000/customdb');
+        expect(env.database.user).toBe('custom');
+        expect(env.database.password).toBe('secret');
     });
 
-    it("falls back to default when boolean string is invalid", async () => {
-        process.env.OTEL_ENABLED = "yes"; // not "true"/"false"
-        const {env} = await loadEnvModule();
-        expect(env.otel.enabled).toBe(true); // default
+    it('falls back to default when boolean string is invalid', async () => {
+        process.env.OTEL_ENABLED = 'yes';
+        const env = await loadEnvModule();
+        expect(env.otel.enabled).toBe(true);
     });
 });

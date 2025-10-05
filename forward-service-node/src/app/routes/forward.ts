@@ -1,34 +1,47 @@
-import type { Request, Response } from "express";
-import Undici from "undici";
-import request = Undici.request;
-import { env } from "@/config/env.ts";
-import logger from "@/infra/logger.ts";
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import logger from '@/infra/logger.ts';
+import { ForwardService, ForwardServiceError } from '@/service/index.ts';
 
-export const forwardRoute = async (req: Request, res: Response) => {
-    const upstreamBase = env.forwardBaseURL;
-    const targetUrl = new URL(req.originalUrl, upstreamBase).toString();
+const JSON_CONTENT_TYPE = 'application/json';
 
-    logger.http(`Forwarding ${req.method} ${req.originalUrl} -> ${targetUrl}`);
-
-    const hasBodyMethod = ["POST","PUT","PATCH","DELETE"].includes(req.method.toUpperCase());
-    const body = hasBodyMethod && req.body && Object.keys(req.body).length ? JSON.stringify(req.body) : undefined;
-
-    try {
-        const { statusCode, body: upstreamBody } = await request(targetUrl, {
-            method: req.method,
-            headers: { "content-type": "application/json" },
-            body,
-            // uses global Agent
-        });
-
-        const text = await upstreamBody.text();
-        let data: any;
-        try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-
-        logger.debug(`Upstream ${statusCode}: ${text?.slice(0, 512)}`);
-        res.status(statusCode).json(data);
-    } catch (e: any) {
-        logger.error(`Forward error: ${e?.stack || e?.message || String(e)}`);
-        res.status(502).json({ error: "Bad Gateway", detail: "Failed to reach upstream" });
+const extractContentType = (headers: Record<string, string | string[] | undefined>): string | undefined => {
+    const raw = headers['content-type'];
+    if (!raw) {
+        return undefined;
     }
-}
+
+    return Array.isArray(raw) ? raw[0] : raw;
+};
+
+export const createForwardHandler = (service: ForwardService): RequestHandler => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const result = await service.forward(req);
+            const headers = result.headers as Record<string, string | string[] | undefined>;
+            const contentType = extractContentType(headers);
+
+            service.decorateResponseHeaders(res, headers);
+
+            if (contentType && !res.getHeader('content-type')) {
+                res.setHeader('content-type', contentType);
+            }
+
+            res.status(result.statusCode);
+
+            if (contentType?.includes(JSON_CONTENT_TYPE)) {
+                res.send(result.body || 'null');
+            } else {
+                res.send(result.body);
+            }
+        } catch (error) {
+            if (error instanceof ForwardServiceError) {
+                const payload = error.body ?? { error: 'Bad Gateway', detail: 'Failed to reach upstream' };
+                res.status(error.statusCode).json(payload);
+                return;
+            }
+
+            logger.error(`Unhandled forward route error: ${(error as Error)?.message || String(error)}`);
+            next(error);
+        }
+    };
+};

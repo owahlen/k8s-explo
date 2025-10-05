@@ -5,7 +5,8 @@ import { buildApp } from "@/app/index.ts";
 import { env } from "@/config/env.ts";
 import logger from "@/infra/logger.ts";
 import { closeAgent } from "@/http/agent.ts";
-import {stopOtel} from "@/otel.ts";
+import { stopOtel } from "@/otel.ts";
+import { closePool } from "@/infra/database.ts";
 
 const app = buildApp();
 const server = http.createServer(app);
@@ -19,6 +20,7 @@ const shutdown = async () => {
     logger.info("Shutting down...");
     server.close(() => logger.info("HTTP server closed"));
     await closeAgent();
+    await closePool();
     await stopOtel();
     process.exit(0);
 }
