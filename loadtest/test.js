@@ -14,12 +14,12 @@ export let options = {
         // },
         webflux_load: {
             executor: "constant-arrival-rate",
-            startTime: "5m",
+            startTime: "0m",
             rate: 1000,
             timeUnit: "1s",
             preAllocatedVUs: 100,
             maxVUs: 1000,
-            duration: "5m",
+            duration: "15m",
             exec: "webfluxTest",
         },
         // node_load: {

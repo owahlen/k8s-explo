@@ -24,6 +24,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.flywaydb:flyway-core")
+    implementation(project(":forwarddb"))
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -50,4 +51,11 @@ tasks.withType<Test> {
     useJUnitPlatform()
     // eliminate warning about Sharing being supported only for bootloader classes
     jvmArgs = listOf("-Xshare:off")
+}
+
+tasks.register<Exec>("dockerBuild") {
+    group = "docker"
+    description = "Builds the Docker image"
+    workingDir = rootDir
+    commandLine("docker", "build", "-t", "owahlen/forward-service-mvc:dev", "-f", "forward-service-mvc/Dockerfile", ".")
 }

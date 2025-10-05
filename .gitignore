@@ -1,47 +1,43 @@
-# --- Node / package managers ---
-node_modules/
-npm-debug.log*
-
-# --- Build output / caches ---
-dist/
+# Build systems
+.gradle/
 build/
-out/
-.vite/
-.vitest/
-coverage/
-.cache/
-.parcel-cache/
-.turbo/
 
-# TypeScript
-*.tsbuildinfo
-tsconfig.tsbuildinfo
-
-# Linters / tools
-.eslintcache
-.stylelintcache
-
-# --- Env files (keep examples) ---
+# Environment files
 .env
 .env.local
 .env.*.local
 !.env.example
 
-# --- Logs ---
+# Logs
 logs/
 *.log
 *.log.*
 
-# Production
-/dist/
-/build/
-
-# Visual Studio Code
-/.vscode/
-
-# JetBrains / IntelliJ
+# IDE & editor
+.vscode/
 .idea/
 *.iml
+*.ipr
+*.iws
+out/
 
-# MacOS
+# OS junk
 .DS_Store
+
+# Kotlin tooling
+.kotlin/
+
+# Node package directories
+node_modules/
+
+# Build output
+dist/
+
+# Test & tool caches
+.vite/
+.vitest/
+coverage/
+.cache/
+.turbo/
+*.tsbuildinfo
+tsconfig.tsbuildinfo

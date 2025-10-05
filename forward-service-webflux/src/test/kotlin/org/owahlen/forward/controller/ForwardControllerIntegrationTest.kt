@@ -7,27 +7,30 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.extension.ExtendWith
+import org.owahlen.forward.repository.ForwardLogRepository
 import org.owahlen.forward.support.EchoUpstreamServer
-import org.owahlen.forward.support.ForwardLogDatabaseTestSupport
-import org.owahlen.forward.support.R2dbcTestConfig
+import org.owahlen.forward.support.ForwardLogCleanupExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(R2dbcTestConfig::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ForwardControllerIntegrationTest : ForwardLogDatabaseTestSupport() {
+@ExtendWith(ForwardLogCleanupExtension::class)
+class ForwardControllerIntegrationTest {
 
     @Autowired
     lateinit var client: WebTestClient
 
     @Autowired
     lateinit var meterRegistry: MeterRegistry
+
+    @Autowired
+    lateinit var forwardLogRepository: ForwardLogRepository
 
     companion object {
         @JvmStatic

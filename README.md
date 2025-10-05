@@ -15,10 +15,17 @@ A minimal multi-runtime setup to explore services locally and on minikube:
 - `forward-service-node/`: forwards to echo-service (same stack)
 - `forward-service-webflux/`: forwards to echo-service (Spring Boot WebFlux)
 - `forward-service-mvc/`: forwards to echo-service (Spring Boot MVC)
+- `forwarddb/`: shared Flyway migrations consumed by the JVM forwarders
 - `k8s/`: Deployments, Services (ClusterIP), and Ingress for Node, WebFlux, and MVC services
 - `http/`: sample requests
 
 ## Develop & Test Locally
+The repository is a Gradle multi-project. From the repo root you can run:
+- `./gradlew check` to execute all unit/integration tests (Node + JVM)
+- `./gradlew :echo-service-node:build` or `:forward-service-node:build` to wrap `npm run build`
+- `./gradlew :forward-service-webflux:test` / `:forward-service-mvc:test` for the JVM services
+
+You can still work inside each directory with the native tooling if you prefer:
 ### Initial Setup
 * [Install minikube](https://minikube.sigs.k8s.io/docs/start/)
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/) in a matching version
@@ -94,20 +101,25 @@ FORWARD_BASE_URL=http://localhost:3000 ./gradlew bootRun   # http://localhost:80
 - Health (MVC Actuator): `curl 'http://localhost:8080/actuator/health'`
 
 ## Build & Containerize (Node and JVM WebFlux/MVC images)
+- `./gradlew build` (or `gradle build`) compiles every project in the repo.
+- `./gradlew test` (or `gradle test`) runs every test suite (Node + JVM).
+- `./gradlew dockerBuild` (or `gradle dockerBuild`) builds every service image.
+- `./gradlew :echo-service-node:dockerBuild` (or `:forward-service-node:dockerBuild`, `:forward-service-webflux:dockerBuild`, `:forward-service-mvc:dockerBuild`) builds a single image.
+
 ```bash
 # switch Docker context to minikube
 eval $(minikube -p minikube docker-env)  # switch Docker context
 
-docker build -t owahlen/echo-service-node:dev ./echo-service-node
+./gradlew :echo-service-node:dockerBuild
 kubectl rollout restart deploy echo-service-node
 
-docker build -t owahlen/forward-service-node:dev ./forward-service-node
+./gradlew :forward-service-node:dockerBuild
 kubectl rollout restart deploy forward-service-node
 
-docker build -t owahlen/forward-service-webflux:dev ./forward-service-webflux
+./gradlew :forward-service-webflux:dockerBuild
 kubectl rollout restart deploy forward-service-webflux
 
-docker build -t owahlen/forward-service-mvc:dev ./forward-service-mvc
+./gradlew :forward-service-mvc:dockerBuild
 kubectl rollout restart deploy forward-service-mvc
 
 # switch back Docker context
@@ -128,10 +140,7 @@ minikube ip # retrieve the tunnel IP
 Build inside Minikube’s Docker daemon:
 ```bash
 eval $(minikube docker-env)
-docker build -t owahlen/echo-service-node:dev echo-service-node
-docker build -t owahlen/forward-service-node:dev forward-service-node
-docker build -t owahlen/forward-service-webflux:dev forward-service-webflux
-docker build -t owahlen/forward-service-mvc:dev forward-service-mvc
+./gradlew dockerBuild
 ```
 3) Apply manifests:
 ```bash
@@ -166,12 +175,13 @@ ss -tanp
 - Env (forward-node): `PORT` (3001), `FORWARD_BASE_URL` (defaults to `http://localhost:3000`; set to `http://echo-service:3000` in cluster)
 - Env (forward-webflux): `FORWARD_BASE_URL` (defaults to `http://localhost:3000`)
 - Env (forward-mvc): `FORWARD_BASE_URL` (defaults to `http://localhost:3000`)
-- Probes: readiness/liveness and resource limits defined in `k8s-explo.yaml` (Node services)
+- Probes: readiness/liveness and resource limits defined in `k8s/app/**/deployment.yaml`
 - Containers run as non-root
 
 ## Update & Cleanup
 - Update image: rebuild, then `kubectl set image deployment/echo-service echo-service=<new>:<tag>`
-- Remove: `kubectl delete -f k8s-explo.yaml`
+- Deploy: `kubectl apply -R -f k8s/app -f k8s/monitoring`
+- Remove: `kubectl delete -R -f k8s/app -f k8s/monitoring`
 
 ## Load testing
 ```bash

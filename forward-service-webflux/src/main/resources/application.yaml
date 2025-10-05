@@ -32,3 +32,10 @@ spring:
     pool:
       max-size: ${DB_R2DBC_MAX_POOL_SIZE:10}
       initial-size: ${DB_R2DBC_INITIAL_SIZE:0}
+  flyway:
+    enabled: true
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/forwarddb}
+    user: ${POSTGRES_USER:app}
+    password: ${POSTGRES_PASSWORD:postgres}
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}

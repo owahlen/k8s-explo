@@ -5,17 +5,20 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.extension.ExtendWith
 import org.owahlen.forward.model.ForwardLog
-import org.owahlen.forward.support.ForwardLogDatabaseTestSupport
-import org.owahlen.forward.support.R2dbcTestConfig
+import org.owahlen.forward.support.ForwardLogCleanupExtension
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest
-import org.springframework.context.annotation.Import
 import java.time.Instant
 
 @DataR2dbcTest
-@Import(R2dbcTestConfig::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ForwardLogRepositoryTest : ForwardLogDatabaseTestSupport() {
+@ExtendWith(ForwardLogCleanupExtension::class)
+class ForwardLogRepositoryTest {
+
+    @Autowired
+    lateinit var forwardLogRepository: ForwardLogRepository
 
     @Test
     fun savesAndReadsForwardLog(): Unit = runBlocking {

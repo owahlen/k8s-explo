@@ -6,9 +6,15 @@ management:
 
 spring:
   r2dbc:
-    url: r2dbc:h2:mem:///forwarddb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: r2dbc:h2:mem:///forwarddb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password: ''
     pool:
       max-size: 5
       initial-size: 0
+  flyway:
+    enabled: true
+    url: jdbc:h2:mem:forwarddb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    user: sa
+    password: ''
+    locations: classpath:db/migration

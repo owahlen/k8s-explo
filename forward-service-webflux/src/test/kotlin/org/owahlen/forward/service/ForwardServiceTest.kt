@@ -7,12 +7,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.extension.ExtendWith
+import org.owahlen.forward.repository.ForwardLogRepository
 import org.owahlen.forward.support.EchoUpstreamServer
-import org.owahlen.forward.support.ForwardLogDatabaseTestSupport
-import org.owahlen.forward.support.R2dbcTestConfig
+import org.owahlen.forward.support.ForwardLogCleanupExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Import
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.MediaType
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest
@@ -23,12 +23,15 @@ import org.springframework.web.server.ServerWebExchange
 import java.nio.charset.StandardCharsets
 
 @SpringBootTest
-@Import(R2dbcTestConfig::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ForwardServiceTest : ForwardLogDatabaseTestSupport() {
+@ExtendWith(ForwardLogCleanupExtension::class)
+class ForwardServiceTest {
 
     @Autowired
     lateinit var forwardService: ForwardService
+
+    @Autowired
+    lateinit var forwardLogRepository: ForwardLogRepository
 
     companion object {
         private const val REQUEST_PAYLOAD = """{"hello":"world"}"""

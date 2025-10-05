@@ -12,19 +12,20 @@
 - `forward-service-webflux/`: forward requests to echo-service using Kotlin + Spring WebFlux.
 - `forward-service-mvc/`: forward requests to echo-service using Kotlin + Spring MVC (blocking IO).
 - `http/`: example requests (`echo.http`).
-- `k8s-explo.yaml`: Deployments, Services, and Ingress for both services.
+- `k8s/app/`: Deployments, Services, database, and ingress manifests.
+- `k8s/monitoring/`: Observability stack (Grafana, OTEL collector, etc.).
 
 ## Build, Test, and Development Commands
 - Install deps (Node): `cd echo-service-node && npm ci`; `cd forward-service-node && npm ci`.
 - Dev (Node): echo on `3000` (`npm run dev`); forward-node on `3001` with `FORWARD_BASE_URL=http://localhost:3000`.
-- Build (Node): `npm run build` (outputs to `dist/`).
+- Build all projects: `./gradlew build` (or `gradle build`).
 - Run built (Node): `npm start` or `node dist/index.js`.
-- Tests (Node): `npm test` in each service dir.
+- Tests (Node): `npm test` in each service dir; all tests via `./gradlew test` (or `gradle test`).
 - JVM forwarders (Kotlin):
-  - WebFlux: `cd forward-service-webflux && ./gradlew bootRun` (set `FORWARD_BASE_URL`); tests via `./gradlew test`.
-  - MVC: `cd forward-service-mvc && ./gradlew bootRun` (set `FORWARD_BASE_URL`); tests via `./gradlew test`.
-- Docker (Node images): `docker build -t <repo>/echo-service:<tag> echo-service-node` and `docker build -t <repo>/forward-service:<tag> forward-service-node`.
-- Kubernetes: `kubectl apply -f k8s-explo.yaml` (images must match tags used).
+  - WebFlux: `cd forward-service-webflux && ./gradlew bootRun` (set `FORWARD_BASE_URL`).
+  - MVC: `cd forward-service-mvc && ./gradlew bootRun` (set `FORWARD_BASE_URL`).
+- Docker images: `./gradlew dockerBuild` (or `gradle dockerBuild`) builds every service; use `./gradlew :<module>:dockerBuild` for a single image.
+- Kubernetes: `kubectl apply -R -f k8s/app -f k8s/monitoring` (images must match tags used).
 
 ## Coding Style & Naming Conventions
 - Node: TypeScript (strict), ESM modules; 4-space indent; single quotes; use `logger` (Winston).
@@ -46,5 +47,5 @@
 ## Security & Configuration Tips
 - Containers run as non-root.
 - Env (echo-node): `PORT` (3000), `LOG_LEVEL` (`info`). Env (forwarders): `PORT` (3001 for node), `FORWARD_BASE_URL`.
-- Probes/limits: defined in `k8s-explo.yaml` for Node services; keep aligned with app behavior.
+- Probes/limits: defined in `k8s/app/**/deployment.yaml`; keep aligned with app behavior.
 - Example checks: echo `curl "http://localhost:3000/?client=test"`; forward POST to Node `http://localhost:3001/...` or WebFlux/MVC `http://localhost:8080/...` when running locally.
