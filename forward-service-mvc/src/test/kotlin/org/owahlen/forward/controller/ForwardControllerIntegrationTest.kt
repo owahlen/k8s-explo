@@ -51,6 +51,8 @@ class ForwardControllerIntegrationTest {
                         "url" to uri
                     )
 
+                    responseMap["pod_name"] = "mvc-upstream"
+
                     if (bodyBytes.isNotEmpty()) {
                         val bodyText = String(bodyBytes)
                         val bodyValue: Any = try {

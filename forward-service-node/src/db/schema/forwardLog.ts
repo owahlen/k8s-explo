@@ -11,12 +11,13 @@ import {pgTable, uuid, timestamp, varchar, integer} from "drizzle-orm/pg-core";
  *
  * Notes:
  * - No default for `id` here (DB doesn't have one). You must supply it on insert.
- * - `timestamp(..., { withTimezone: false })` matches `timestamp` (without time zone).
- */
+ * - `timestamp(..., { withTimezone: false })` matches `timestamp without time zone`.
+*/
 export const forwardLog = pgTable("forward_log", {
     id: uuid("id").primaryKey(),
     logDate: timestamp("log_date", {withTimezone: false}).notNull(),
     podName: varchar("pod_name", {length: 255}).notNull(),
+    targetPodName: varchar("target_pod_name", {length: 255}).notNull(),
     httpStatus: integer("http_status").notNull(),
 });
 

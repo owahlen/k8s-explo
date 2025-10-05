@@ -24,9 +24,12 @@ data class ForwardLog(
     @Column(name = "POD_NAME", nullable = false)
     val podName: String,
 
+    @Column(name = "TARGET_POD_NAME", nullable = false)
+    val targetPodName: String,
+
     @Column(name = "HTTP_STATUS", nullable = false)
     val httpStatus: Int
 ) {
     // JPA requires a no-arg constructor. Hibernate can use it to instantiate the entity.
-    protected constructor() : this(null, Instant.EPOCH, "", 0)
+    protected constructor() : this(null, Instant.EPOCH, "", "", 0)
 }

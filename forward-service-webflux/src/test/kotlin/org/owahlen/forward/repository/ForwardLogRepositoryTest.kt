@@ -26,6 +26,7 @@ class ForwardLogRepositoryTest {
             ForwardLog(
                 logDate = Instant.parse("2025-01-01T12:00:00Z"),
                 podName = "test-pod",
+                targetPodName = "target-pod",
                 httpStatus = 201
             )
         )
@@ -34,6 +35,7 @@ class ForwardLogRepositoryTest {
 
         val found = requireNotNull(forwardLogRepository.findById(savedId))
         assertThat(found.podName).isEqualTo("test-pod")
+        assertThat(found.targetPodName).isEqualTo("target-pod")
 
         val all = forwardLogRepository.findAll().toList()
         assertThat(all).hasSize(1)

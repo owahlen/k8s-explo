@@ -100,5 +100,6 @@ class ForwardControllerIntegrationTest {
         val entry = logs.first()
         assertThat(entry.httpStatus).isEqualTo(200)
         assertThat(entry.podName).isEqualTo("forward-service-webflux")
+        assertThat(entry.targetPodName).isEqualTo("echo-upstream")
     }
 }

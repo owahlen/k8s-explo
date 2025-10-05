@@ -32,7 +32,10 @@ class ForwardServiceTest {
                 val mapper = ObjectMapper()
                 upstream = HttpServer.create(InetSocketAddress(0), 0)
                 upstream.createContext("/") { exchange ->
-                    val responseMap = mapOf("ok" to true)
+                    val responseMap = mapOf(
+                        "ok" to true,
+                        "pod_name" to "mvc-upstream"
+                    )
                     val json = mapper.writeValueAsBytes(responseMap)
                     exchange.responseHeaders.add("Content-Type", "application/json")
                     exchange.sendResponseHeaders(201, json.size.toLong())
@@ -88,5 +91,6 @@ class ForwardServiceTest {
         assertThat(entry.podName).isEqualTo("pod-123")
         assertThat(entry.httpStatus).isEqualTo(201)
         assertThat(entry.logDate).isNotNull()
+        assertThat(entry.targetPodName).isEqualTo("mvc-upstream")
     }
 }

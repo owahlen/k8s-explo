@@ -78,7 +78,7 @@ describe('ForwardService', () => {
 
     it('forwards request to upstream and records log entry', async () => {
         const request = createRequest();
-        const bodyPayload = JSON.stringify({hello: 'world'});
+        const bodyPayload = JSON.stringify({hello: 'world', pod_name: 'echo-pod'});
 
         (httpClient as any).mockResolvedValue({
             statusCode: 200,
@@ -130,6 +130,7 @@ describe('ForwardService', () => {
         const entry = dbMock.valuesMock.mock.calls[0][0] as NewForwardLogEntry;
         expect(entry.httpStatus).toBe(200);
         expect(entry.podName).toBe(podName);
+        expect(entry.targetPodName).toBe('echo-pod');
     });
 
     it('throws ForwardServiceError and logs 502 when upstream fails', async () => {
@@ -152,6 +153,7 @@ describe('ForwardService', () => {
         expect(dbMock.valuesMock).toHaveBeenCalled();
         const entry = dbMock.valuesMock.mock.calls.at(-1)?.[0] as NewForwardLogEntry | undefined;
         expect(entry?.httpStatus).toBe(502);
+        expect(entry?.targetPodName).toBe('unknown');
     });
 
     it('continues when database insert rejects', async () => {
@@ -183,6 +185,36 @@ describe('ForwardService', () => {
 
         expect(dbMock.insertMock).toHaveBeenCalledWith(forwardLog);
         expect(dbMock.valuesMock).toHaveBeenCalledTimes(1);
+        const entry = dbMock.valuesMock.mock.calls.at(-1)?.[0] as NewForwardLogEntry | undefined;
+        expect(entry?.targetPodName).toBe('unknown');
+    });
+
+    it('falls back to unknown when upstream body lacks pod_name', async () => {
+        const request = createRequest();
+        const bodyPayload = JSON.stringify({hello: 'world'});
+
+        (httpClient as any).mockResolvedValue({
+            statusCode: 200,
+            headers: {
+                'content-type': 'application/json',
+            },
+            body: {
+                text: vi.fn().mockResolvedValue(bodyPayload),
+            },
+        });
+
+        const service = new ForwardService({
+            db: dbMock.db as any,
+            baseUrl,
+            podName,
+            requestTimeout: 1_000,
+            httpClient: httpClient as unknown as HttpClient,
+        });
+
+        await service.forward(request);
+
+        const entry = dbMock.valuesMock.mock.calls.at(-1)?.[0] as NewForwardLogEntry | undefined;
+        expect(entry?.targetPodName).toBe('unknown');
     });
 
     it('decorates response headers while skipping hop-by-hop values', () => {

@@ -16,6 +16,8 @@ data class ForwardLog(
     val logDate: Instant,
     @Column("pod_name")
     val podName: String,
+    @Column("target_pod_name")
+    val targetPodName: String,
     @Column("http_status")
     val httpStatus: Int
 ) : Persistable<UUID> {

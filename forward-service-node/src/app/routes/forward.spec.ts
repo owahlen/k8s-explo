@@ -49,6 +49,7 @@ describe('Forward Service API', () => {
                 headers: req.headers,
                 body: req.body || null,
                 query: req.query || null,
+                pod_name: 'upstream-pod',
             });
         });
 
@@ -102,6 +103,7 @@ describe('Forward Service API', () => {
         expect(entry).toBeDefined();
         expect(entry?.httpStatus).toBe(200);
         expect(entry?.podName).toBe('test-pod');
+        expect(entry?.targetPodName).toBe('upstream-pod');
     });
 
     it('forwards POST body and mirrors upstream response', async () => {
@@ -118,6 +120,7 @@ describe('Forward Service API', () => {
         expect(dbMock.entries.length).toBe(before + 1);
         const entry = dbMock.entries.at(-1);
         expect(entry?.httpStatus).toBe(200);
+        expect(entry?.targetPodName).toBe('upstream-pod');
     });
 
     it('logs 502 when upstream is unavailable', async () => {
@@ -135,6 +138,7 @@ describe('Forward Service API', () => {
         expect(response.body).toEqual({ error: 'Bad Gateway', detail: 'Failed to reach upstream' });
         const logCall = failingDb.valuesMock.mock.calls.at(-1)?.[0] as NewForwardLogEntry | undefined;
         expect(logCall?.httpStatus).toBe(502);
+        expect(logCall?.targetPodName).toBe('unknown');
     });
 
     it('continues response flow when database insert rejects', async () => {
@@ -151,5 +155,7 @@ describe('Forward Service API', () => {
         const res = await request(testApp).get('/still-works');
         expect(res.status).toBe(200);
         expect(failingDb.valuesMock).toHaveBeenCalledTimes(1);
+        const attempted = failingDb.valuesMock.mock.calls.at(-1)?.[0] as NewForwardLogEntry | undefined;
+        expect(attempted?.targetPodName).toBe('upstream-pod');
     });
 });

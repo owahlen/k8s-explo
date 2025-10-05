@@ -10,6 +10,7 @@ export const echoRoute = async (req: Request, res: Response) => {
         headers: req.headers,
         body: req.body ?? null,
         query: req.query ?? null,
+        pod_name: process.env.POD_NAME ?? null,
     };
 
     logger.debug(`Sending response: ${JSON.stringify(response, null, 2)}`);

@@ -79,6 +79,7 @@ class ForwardServiceTest {
         val entry = allLogs.first()
         assertThat(entry.httpStatus).isEqualTo(200)
         assertThat(entry.podName).isEqualTo("pod-xyz")
+        assertThat(entry.targetPodName).isEqualTo("echo-upstream")
     }
 
     private fun buildExchange(): ServerWebExchange {

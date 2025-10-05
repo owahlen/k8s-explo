@@ -1,5 +1,6 @@
 package org.owahlen.forward.service
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import org.owahlen.forward.model.ForwardLog
 import org.owahlen.forward.repository.ForwardLogRepository
@@ -21,6 +22,8 @@ class ForwardService(
     @param:Value("\${POD_NAME:forward-service-mvc}") private val podName: String
 ) {
     private val log = LoggerFactory.getLogger(ForwardService::class.java)
+    private val objectMapper = jacksonObjectMapper()
+    private val defaultTargetPodName = "unknown"
 
     private val skipHeaders = setOf(
         HttpHeaders.HOST,
@@ -66,10 +69,13 @@ class ForwardService(
                 .toEntity(ByteArray::class.java)
         }
 
+        val targetPodName = extractTargetPodName(upstream.headers, upstream.body)
+
         // Log the result to the database using repository
         val entry = ForwardLog(
             logDate = Instant.now(),
             podName = podName,
+            targetPodName = targetPodName,
             httpStatus = upstream.statusCode.value()
         )
         forwardLogRepository.save(entry)
@@ -82,5 +88,27 @@ class ForwardService(
         return ResponseEntity.status(upstream.statusCode)
             .headers(respHeaders)
             .body(upstream.body ?: ByteArray(0))
+    }
+
+    private fun extractTargetPodName(headers: HttpHeaders, body: ByteArray?): String {
+        if (body == null || body.isEmpty()) {
+            return defaultTargetPodName
+        }
+
+        val contentType = headers.contentType?.toString()
+            ?: headers.getFirst(HttpHeaders.CONTENT_TYPE)
+
+        if (contentType?.contains("application/json", ignoreCase = true) != true) {
+            return defaultTargetPodName
+        }
+
+        return runCatching {
+            val node = objectMapper.readTree(body)
+            val value = node.path("pod_name").asText(null)
+            if (!value.isNullOrBlank()) value else defaultTargetPodName
+        }.getOrElse { ex ->
+            log.debug("Failed to parse upstream body for pod_name", ex)
+            defaultTargetPodName
+        }
     }
 }

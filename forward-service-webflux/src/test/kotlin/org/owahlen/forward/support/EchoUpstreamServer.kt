@@ -22,6 +22,8 @@ object EchoUpstreamServer {
                             "url" to req.uri()
                         )
 
+                        responseMap["pod_name"] = "echo-upstream"
+
                         if (body.isNotBlank()) {
                             val bodyValue: Any = try {
                                 mapper.readTree(body)

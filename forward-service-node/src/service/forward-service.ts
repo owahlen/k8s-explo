@@ -81,6 +81,7 @@ export class ForwardService {
     private readonly podName: string;
     private readonly requestTimeout: number;
     private readonly httpClient: HttpClient;
+    private static readonly DEFAULT_TARGET_POD_NAME = "unknown";
 
     /**
      * Create a new {@link ForwardService}.
@@ -143,7 +144,8 @@ export class ForwardService {
             });
 
             const responseBody = await upstream.body.text();
-            await this.persistLogEntry(upstream.statusCode);
+            const targetPodName = this.extractTargetPodName(upstream.headers, responseBody);
+            await this.persistLogEntry(upstream.statusCode, targetPodName);
 
             return {
                 statusCode: upstream.statusCode,
@@ -238,11 +240,15 @@ export class ForwardService {
      *
      * @param statusCode Upstream status code to store (e.g., 200, 502).
      */
-    private async persistLogEntry(statusCode: number): Promise<void> {
+    private async persistLogEntry(
+        statusCode: number,
+        targetPodName: string = ForwardService.DEFAULT_TARGET_POD_NAME
+    ): Promise<void> {
         const entry: ForwardLogEntry = {
             id: randomUUID(),
             logDate: new Date(),
             podName: this.podName,
+            targetPodName,
             httpStatus: statusCode,
         };
 
@@ -251,6 +257,7 @@ export class ForwardService {
                 id: entry.id,
                 logDate: entry.logDate,
                 podName: entry.podName,
+                targetPodName: entry.targetPodName,
                 httpStatus: entry.httpStatus,
             });
         } catch (error) {
@@ -258,6 +265,33 @@ export class ForwardService {
             // Keep this non-fatal for the request flow
             logger.warn(`Failed to write forward log entry: ${err.message}`);
         }
+    }
+
+    private extractTargetPodName(
+        headers: Dispatcher.ResponseData["headers"],
+        body: string
+    ): string {
+        const rawContentType = headers["content-type"]; // Undici normalizes header names to lowercase
+        const contentType = Array.isArray(rawContentType)
+            ? rawContentType[0]
+            : rawContentType;
+
+        if (typeof contentType === "string" && contentType.includes("application/json")) {
+            try {
+                const parsed = JSON.parse(body);
+                if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                    const value = (parsed as Record<string, unknown>)["pod_name"];
+                    if (typeof value === "string" && value.trim().length > 0) {
+                        return value;
+                    }
+                }
+            } catch (error) {
+                const err = error instanceof Error ? error : new Error(String(error));
+                logger.debug(`Failed to parse upstream body for pod name: ${err.message}`);
+            }
+        }
+
+        return ForwardService.DEFAULT_TARGET_POD_NAME;
     }
 }
 
