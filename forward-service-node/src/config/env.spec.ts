@@ -42,13 +42,11 @@ describe('env config (fromEnv)', () => {
         expect(env.otel.enabled).toBe(true);
         expect(env.otel.metricExportInterval).toBe(60_000);
         expect(env.otel.metricExportTimeout).toBe(30_000);
-        expect(env.database.connectionString).toBe('postgresql://localhost:5432/forwarddb');
-        expect(env.database.user).toBe('app');
-        expect(env.database.password).toBe('postgres');
+        expect(env.database.connectionString).toBe('postgres://app:postgres@localhost:5432/forwarddb');
         expect(env.database.ssl).toBe(false);
-        expect(env.database.pool.max).toBe(10);
-        expect(env.database.pool.idleTimeoutMillis).toBe(30_000);
-        expect(env.database.pool.connectionTimeoutMillis).toBe(5_000);
+        expect(env.database.max).toBe(10);
+        expect(env.database.idleTimeoutMillis).toBe(30_000);
+        expect(env.database.connectionTimeoutMillis).toBe(5_000);
     });
 
     it('parses numbers from env', async () => {
@@ -63,10 +61,10 @@ describe('env config (fromEnv)', () => {
         process.env.MAX_REQUESTS_PER_CLIENT = '12345';
         process.env.OTEL_METRIC_EXPORT_INTERVAL = '30000';
         process.env.OTEL_METRIC_EXPORT_TIMEOUT = '15000';
-        process.env.DB_POOL_MAX = '20';
-        process.env.DB_POOL_IDLE_TIMEOUT = '45000';
-        process.env.DB_POOL_CONNECTION_TIMEOUT = '6000';
-        process.env.POSTGRES_PORT = '6543';
+        process.env.POSTGRES_POOL_MAX = '20';
+        process.env.POSTGRES_POOL_IDLE_TIMEOUT = '45000';
+        process.env.POSTGRES_POOL_CONNECTION_TIMEOUT = '6000';
+        process.env.POSTGRES_URL = 'postgres://app:postgres@localhost:6543/forwarddb';
 
         const env = await loadEnvModule();
 
@@ -81,10 +79,10 @@ describe('env config (fromEnv)', () => {
         expect(env.agent.maxRequestsPerClient).toBe(12345);
         expect(env.otel.metricExportInterval).toBe(30000);
         expect(env.otel.metricExportTimeout).toBe(15000);
-        expect(env.database.pool.max).toBe(20);
-        expect(env.database.pool.idleTimeoutMillis).toBe(45000);
-        expect(env.database.pool.connectionTimeoutMillis).toBe(6000);
-        expect(env.database.connectionString).toBe('postgresql://localhost:6543/forwarddb');
+        expect(env.database.max).toBe(20);
+        expect(env.database.idleTimeoutMillis).toBe(45000);
+        expect(env.database.connectionTimeoutMillis).toBe(6000);
+        expect(env.database.connectionString).toBe('postgres://app:postgres@localhost:6543/forwarddb');
     });
 
     it('parses booleans from env', async () => {
@@ -120,20 +118,16 @@ describe('env config (fromEnv)', () => {
         process.env.DB_POOL_MAX = 'nope';
         const env = await loadEnvModule();
         expect(env.agent.keepAliveTimeout).toBe(4_000);
-        expect(env.database.pool.max).toBe(10);
+        expect(env.database.max).toBe(10);
     });
 
     it('parses custom URLs and credentials', async () => {
         process.env.FORWARD_BASE_URL = 'http://example.internal:9999';
-        process.env.POSTGRES_URL = 'jdbc:postgresql://db.internal:6000/customdb';
-        process.env.POSTGRES_USER = 'custom';
-        process.env.POSTGRES_PASSWORD = 'secret';
+        process.env.POSTGRES_URL = 'postgres://custom:secret@db.internal:6000/customdb';
 
         const env = await loadEnvModule();
         expect(env.forwardBaseURL).toBe('http://example.internal:9999');
-        expect(env.database.connectionString).toBe('postgresql://db.internal:6000/customdb');
-        expect(env.database.user).toBe('custom');
-        expect(env.database.password).toBe('secret');
+        expect(env.database.connectionString).toBe('postgres://custom:secret@db.internal:6000/customdb');
     });
 
     it('falls back to default when boolean string is invalid', async () => {

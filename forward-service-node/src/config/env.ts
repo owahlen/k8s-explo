@@ -43,30 +43,7 @@ const optionalNumberFromEnv = (name: string, def: number | null): number | null 
     }
 
     const parsed = Number.parseInt(val, 10);
-    if (Number.isNaN(parsed)) {
-        return def;
-    }
-
-    return parsed;
-};
-
-const sanitizeJdbcUrl = (rawUrl: string | null): string | null => {
-    if (!rawUrl) return null;
-    const trimmed = rawUrl.trim();
-    if (!trimmed) return null;
-    return trimmed.startsWith('jdbc:') ? trimmed.slice(5) : trimmed;
-};
-
-const resolvePostgresConnectionString = () => {
-    const urlFromEnv = sanitizeJdbcUrl(process.env.POSTGRES_URL ?? null);
-    if (urlFromEnv) {
-        return urlFromEnv;
-    }
-
-    const host = fromEnv('POSTGRES_HOST', 'localhost');
-    const port = fromEnv('POSTGRES_PORT', 5432);
-    const database = fromEnv('POSTGRES_DB', 'forwarddb');
-    return `postgresql://${host}:${port}/${database}`;
+    return Number.isNaN(parsed) ? def : parsed;
 };
 
 export const env = {
@@ -90,17 +67,10 @@ export const env = {
         metricExportTimeout: fromEnv('OTEL_METRIC_EXPORT_TIMEOUT', 30_000),
     },
     database: {
-        connectionString: resolvePostgresConnectionString(),
-        user: fromEnv('POSTGRES_USER', 'app'),
-        password: fromEnv('POSTGRES_PASSWORD', 'postgres'),
+        connectionString: fromEnv('POSTGRES_URL', 'postgres://app:postgres@localhost:5432/forwarddb'),
         ssl: fromEnv('POSTGRES_SSL', false),
-        pool: {
-            max: fromEnv('DB_POOL_MAX', 10),
-            idleTimeoutMillis: fromEnv('DB_POOL_IDLE_TIMEOUT', 30_000),
-            connectionTimeoutMillis: fromEnv('DB_POOL_CONNECTION_TIMEOUT', 5_000),
-        },
+        max: fromEnv('POSTGRES_POOL_MAX', 10),
+        idleTimeoutMillis: fromEnv('POSTGRES_POOL_IDLE_TIMEOUT', 30_000),
+        connectionTimeoutMillis: fromEnv('POSTGRES_POOL_CONNECTION_TIMEOUT', 5_000),
     },
 };
-
-export type Env = typeof env;
-export type DatabaseConfig = typeof env.database;

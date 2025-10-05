@@ -17,6 +17,7 @@
     "@opentelemetry/instrumentation-http": "^0.205.0",
     "@opentelemetry/sdk-node": "^0.205.0",
     "dotenv": "^17.2.2",
+    "drizzle-orm": "^0.44.6",
     "express": "^5.1.0",
     "pg": "^8.16.3",
     "undici": "^7.16.0",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/supertest": "^6.0.3",
+    "drizzle-kit": "^0.31.5",
     "supertest": "^7.1.4",
     "vite": "^7.1.5",
     "vite-plugin-node": "^7.0.0",

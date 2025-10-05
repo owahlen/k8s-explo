@@ -1,11 +1,37 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {Request, Response} from 'express';
-import {ForwardService, ForwardServiceError} from '@/service/forward-service.ts';
-import type {ForwardLogRepository} from '@/repository/index.ts';
 import Undici from "undici";
+import {ForwardService, ForwardServiceError} from '@/service/forward-service.ts';
+import {forwardLog, type NewForwardLogEntry} from '@/db/schema/forwardLog.ts';
 import undiciRequest = Undici.request;
 
 type HttpClient = typeof undiciRequest;
+
+type MockDb = {
+    insert: ReturnType<typeof vi.fn>;
+};
+
+type DbMock = {
+    db: MockDb;
+    entries: NewForwardLogEntry[];
+    insertMock: ReturnType<typeof vi.fn>;
+    valuesMock: ReturnType<typeof vi.fn>;
+};
+
+const createDbMock = (): DbMock => {
+    const entries: NewForwardLogEntry[] = [];
+    const valuesMock = vi.fn(async (row: NewForwardLogEntry) => {
+        entries.push(row);
+    });
+    const insertMock = vi.fn(() => ({values: valuesMock}));
+
+    return {
+        db: {insert: insertMock} as unknown as MockDb,
+        entries,
+        insertMock,
+        valuesMock,
+    };
+};
 
 describe('ForwardService', () => {
     const baseUrl = 'https://example.internal';
@@ -42,14 +68,11 @@ describe('ForwardService', () => {
         return {res, headers};
     };
 
-    let repository: ForwardLogRepository;
+    let dbMock: DbMock;
     let httpClient: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-        repository = {
-            save: vi.fn().mockResolvedValue(undefined),
-        } as ForwardLogRepository;
-
+        dbMock = createDbMock();
         httpClient = vi.fn();
     });
 
@@ -70,7 +93,7 @@ describe('ForwardService', () => {
         });
 
         const service = new ForwardService({
-            repository,
+            db: dbMock.db as any,
             baseUrl,
             podName,
             requestTimeout: 1_000,
@@ -79,7 +102,6 @@ describe('ForwardService', () => {
 
         const response = await service.forward(request);
 
-        expect(httpClient).toHaveBeenCalledTimes(1);
         expect(httpClient).toHaveBeenCalledWith(
             `${baseUrl}${request.originalUrl}`,
             expect.objectContaining({
@@ -92,6 +114,7 @@ describe('ForwardService', () => {
                 body: JSON.stringify(request.body),
             }),
         );
+        expect(httpClient).toHaveBeenCalledTimes(1);
 
         expect(response.statusCode).toBe(200);
         expect(response.body).toBe(bodyPayload);
@@ -102,8 +125,9 @@ describe('ForwardService', () => {
             }),
         );
 
-        expect(repository.save).toHaveBeenCalledTimes(1);
-        const entry = (repository.save as any).mock.calls[0][0];
+        expect(dbMock.insertMock).toHaveBeenCalledWith(forwardLog);
+        expect(dbMock.valuesMock).toHaveBeenCalledTimes(1);
+        const entry = dbMock.valuesMock.mock.calls[0][0] as NewForwardLogEntry;
         expect(entry.httpStatus).toBe(200);
         expect(entry.podName).toBe(podName);
     });
@@ -113,7 +137,7 @@ describe('ForwardService', () => {
         (httpClient as any).mockRejectedValue(new Error('connection refused'));
 
         const service = new ForwardService({
-            repository,
+            db: dbMock.db as any,
             baseUrl,
             podName,
             requestTimeout: 10,
@@ -124,12 +148,13 @@ describe('ForwardService', () => {
         await expect(promise).rejects.toThrowError(ForwardServiceError);
         await expect(promise).rejects.toMatchObject({statusCode: 502});
 
-        expect(repository.save).toHaveBeenCalled();
-        const entry = (repository.save as any).mock.calls.at(-1)[0];
-        expect(entry.httpStatus).toBe(502);
+        expect(dbMock.insertMock).toHaveBeenCalledWith(forwardLog);
+        expect(dbMock.valuesMock).toHaveBeenCalled();
+        const entry = dbMock.valuesMock.mock.calls.at(-1)?.[0] as NewForwardLogEntry | undefined;
+        expect(entry?.httpStatus).toBe(502);
     });
 
-    it('continues when repository.save rejects', async () => {
+    it('continues when database insert rejects', async () => {
         const request = createRequest();
         const bodyPayload = '{}';
 
@@ -141,10 +166,10 @@ describe('ForwardService', () => {
             },
         });
 
-        (repository.save as any).mockRejectedValue(new Error('db unavailable'));
+        dbMock.valuesMock.mockRejectedValueOnce(new Error('db unavailable'));
 
         const service = new ForwardService({
-            repository,
+            db: dbMock.db as any,
             baseUrl,
             podName,
             requestTimeout: 500,
@@ -156,12 +181,13 @@ describe('ForwardService', () => {
             body: bodyPayload,
         });
 
-        expect(repository.save).toHaveBeenCalledTimes(1);
+        expect(dbMock.insertMock).toHaveBeenCalledWith(forwardLog);
+        expect(dbMock.valuesMock).toHaveBeenCalledTimes(1);
     });
 
     it('decorates response headers while skipping hop-by-hop values', () => {
         const service = new ForwardService({
-            repository,
+            db: dbMock.db as any,
             baseUrl,
             podName,
             requestTimeout: 500,

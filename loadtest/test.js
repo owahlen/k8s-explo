@@ -2,36 +2,36 @@ import http from "k6/http";
 
 export let options = {
     scenarios: {
-        // mvc_load: {
-        //     executor: "constant-arrival-rate",
-        //     startTime: "0m",
-        //     rate: 1000,
-        //     timeUnit: "1s",
-        //     preAllocatedVUs: 100,
-        //     maxVUs: 1000,
-        //     duration: "15m",
-        //     exec: "mvcTest",
-        // },
-        webflux_load: {
+        mvc_load: {
             executor: "constant-arrival-rate",
             startTime: "0m",
-            rate: 1000,
+            rate: 400,
             timeUnit: "1s",
             preAllocatedVUs: 100,
             maxVUs: 1000,
-            duration: "15m",
+            duration: "5m",
+            exec: "mvcTest",
+        },
+        webflux_load: {
+            executor: "constant-arrival-rate",
+            startTime: "5m",
+            rate: 400,
+            timeUnit: "1s",
+            preAllocatedVUs: 100,
+            maxVUs: 1000,
+            duration: "5m",
             exec: "webfluxTest",
         },
-        // node_load: {
-        //     executor: "constant-arrival-rate",
-        //     startTime: "10m",
-        //     rate: 1000,
-        //     timeUnit: "1s",
-        //     preAllocatedVUs: 100,
-        //     maxVUs: 1000,
-        //     duration: "5m",
-        //     exec: "nodeTest",
-        // },
+        node_load: {
+            executor: "constant-arrival-rate",
+            startTime: "10m",
+            rate: 400,
+            timeUnit: "1s",
+            preAllocatedVUs: 100,
+            maxVUs: 1000,
+            duration: "5m",
+            exec: "nodeTest",
+        },
     },
 };
 

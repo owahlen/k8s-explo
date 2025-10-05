@@ -69,8 +69,6 @@ spec:
               value: "5432"
             - name: POSTGRES_DB
               value: forwarddb
-            - name: POSTGRES_URL
-              value: jdbc:postgresql://forward-db:5432/forwarddb
             - name: POSTGRES_USER
               value: app
             - name: POSTGRES_PASSWORD
@@ -78,6 +76,8 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: POSTGRES_PASSWORD
+            - name: POSTGRES_URL
+              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)
           ports:
             - name: http
               containerPort: 3000

@@ -3,30 +3,41 @@ import request from 'supertest';
 import { Server } from 'http';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import type { ForwardLogRepository } from '@/repository/index.ts';
-import type { ForwardLogEntry } from '@/domain/forward-log.ts';
 import { ForwardService } from '@/service/forward-service.ts';
 import { buildApp } from '@/app/index.ts';
+import type { NewForwardLogEntry } from '@/db/schema/forwardLog.ts';
 
-// Configure env BEFORE importing the app
 process.env.OTEL_ENABLED = 'false';
 process.env.POD_NAME = 'test-pod';
-process.env.DB_POOL_MAX = '2'; // ensure parsing coverage if env module loads defaults
+process.env.DB_POOL_MAX = '2';
 
-class InMemoryForwardLogRepository implements ForwardLogRepository {
-    public readonly entries: ForwardLogEntry[] = [];
+type DbMock = {
+    db: any;
+    entries: NewForwardLogEntry[];
+    insertMock: ReturnType<typeof vi.fn>;
+    valuesMock: ReturnType<typeof vi.fn>;
+};
 
-    async save(entry: ForwardLogEntry): Promise<void> {
-        this.entries.push(entry);
-    }
-}
+const createDbMock = (): DbMock => {
+    const entries: NewForwardLogEntry[] = [];
+    const valuesMock = vi.fn(async (row: NewForwardLogEntry) => {
+        entries.push(row);
+    });
+    const insertMock = vi.fn(() => ({ values: valuesMock }));
+    return {
+        db: { insert: insertMock } as any,
+        entries,
+        insertMock,
+        valuesMock,
+    };
+};
 
 describe('Forward Service API', () => {
     let upstream: Server;
     let forward: Server;
     let upstreamPort: number;
     let app: import('express').Express;
-    let repository: InMemoryForwardLogRepository;
+    let dbMock: DbMock;
 
     beforeAll(async () => {
         const upstreamApp = express();
@@ -55,9 +66,9 @@ describe('Forward Service API', () => {
 
         process.env.FORWARD_BASE_URL = `http://127.0.0.1:${upstreamPort}`;
 
-        repository = new InMemoryForwardLogRepository();
+        dbMock = createDbMock();
         const forwardService = new ForwardService({
-            repository,
+            db: dbMock.db as any,
             baseUrl: process.env.FORWARD_BASE_URL,
             podName: process.env.POD_NAME,
             requestTimeout: 5_000,
@@ -79,15 +90,15 @@ describe('Forward Service API', () => {
     });
 
     it('forwards GET and returns upstream JSON', async () => {
-        const before = repository.entries.length;
+        const before = dbMock.entries.length;
         const res = await request(app).get('/hello?client=test');
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toContain('application/json');
         expect(res.body).toHaveProperty('method', 'GET');
         expect(res.body).toHaveProperty('url', '/hello?client=test');
 
-        expect(repository.entries.length).toBe(before + 1);
-        const entry = repository.entries.at(-1);
+        expect(dbMock.entries.length).toBe(before + 1);
+        const entry = dbMock.entries.at(-1);
         expect(entry).toBeDefined();
         expect(entry?.httpStatus).toBe(200);
         expect(entry?.podName).toBe('test-pod');
@@ -95,7 +106,7 @@ describe('Forward Service API', () => {
 
     it('forwards POST body and mirrors upstream response', async () => {
         const payload = { message: 'forward me' };
-        const before = repository.entries.length;
+        const before = dbMock.entries.length;
 
         const res = await request(app).post('/data').send(payload);
         expect(res.status).toBe(200);
@@ -104,15 +115,15 @@ describe('Forward Service API', () => {
         expect(res.body).toHaveProperty('body');
         expect(res.body.body).toEqual(payload);
 
-        expect(repository.entries.length).toBe(before + 1);
-        const entry = repository.entries.at(-1);
+        expect(dbMock.entries.length).toBe(before + 1);
+        const entry = dbMock.entries.at(-1);
         expect(entry?.httpStatus).toBe(200);
     });
 
     it('logs 502 when upstream is unavailable', async () => {
-        const failingRepository = new InMemoryForwardLogRepository();
+        const failingDb = createDbMock();
         const failingService = new ForwardService({
-            repository: failingRepository,
+            db: failingDb.db as any,
             baseUrl: 'http://127.0.0.1:59999',
             podName: 'test-pod',
             requestTimeout: 100,
@@ -122,15 +133,15 @@ describe('Forward Service API', () => {
         const response = await request(failingApp).get('/unavailable');
         expect(response.status).toBe(502);
         expect(response.body).toEqual({ error: 'Bad Gateway', detail: 'Failed to reach upstream' });
-        expect(failingRepository.entries.at(-1)?.httpStatus).toBe(502);
+        const logCall = failingDb.valuesMock.mock.calls.at(-1)?.[0] as NewForwardLogEntry | undefined;
+        expect(logCall?.httpStatus).toBe(502);
     });
 
-    it('continues response flow when repository throws', async () => {
-        const failingRepo: ForwardLogRepository = {
-            save: vi.fn().mockRejectedValue(new Error('db down')),
-        };
+    it('continues response flow when database insert rejects', async () => {
+        const failingDb = createDbMock();
+        failingDb.valuesMock.mockRejectedValueOnce(new Error('db down'));
         const service = new ForwardService({
-            repository: failingRepo,
+            db: failingDb.db as any,
             baseUrl: process.env.FORWARD_BASE_URL,
             podName: process.env.POD_NAME,
             requestTimeout: 5_000,
@@ -139,5 +150,6 @@ describe('Forward Service API', () => {
 
         const res = await request(testApp).get('/still-works');
         expect(res.status).toBe(200);
+        expect(failingDb.valuesMock).toHaveBeenCalledTimes(1);
     });
 });

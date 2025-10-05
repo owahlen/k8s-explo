@@ -6,7 +6,7 @@ import { env } from "@/config/env.ts";
 import logger from "@/infra/logger.ts";
 import { closeAgent } from "@/http/agent.ts";
 import { stopOtel } from "@/otel.ts";
-import { closePool } from "@/infra/database.ts";
+import { closePool } from "@/db/drizzle.ts";
 
 const app = buildApp();
 const server = http.createServer(app);
